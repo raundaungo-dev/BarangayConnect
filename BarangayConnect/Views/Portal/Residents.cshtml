@@ -1,0 +1,89 @@
+@model BarangayConnect.Models.ResidentsPageViewModel
+@{
+    ViewData["Title"] = "Residents";
+}
+
+<section class="page-heading">
+    <p class="eyebrow">Resident Registry</p>
+    <h1>Maintain a clean and searchable resident master list</h1>
+    <p>The resident table supports later appointment booking and service request submission through shared database relationships.</p>
+</section>
+
+@if (TempData["StatusMessage"] is string message)
+{
+    <div class="alert alert-success shadow-sm">@message</div>
+}
+
+<section class="form-layout">
+    <article class="panel-card">
+        <h2>Add Resident</h2>
+        <form asp-action="Residents" method="post" class="data-form">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="field-grid">
+                <div>
+                    <label asp-for="NewResident.FullName"></label>
+                    <input asp-for="NewResident.FullName" class="form-control" />
+                    <span asp-validation-for="NewResident.FullName" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewResident.HouseholdNo"></label>
+                    <input asp-for="NewResident.HouseholdNo" class="form-control" />
+                    <span asp-validation-for="NewResident.HouseholdNo" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewResident.ContactNumber"></label>
+                    <input asp-for="NewResident.ContactNumber" class="form-control" />
+                    <span asp-validation-for="NewResident.ContactNumber" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewResident.EmailAddress"></label>
+                    <input asp-for="NewResident.EmailAddress" class="form-control" />
+                    <span asp-validation-for="NewResident.EmailAddress" class="text-danger"></span>
+                </div>
+                <div class="full-span">
+                    <label asp-for="NewResident.Purok"></label>
+                    <input asp-for="NewResident.Purok" class="form-control" />
+                    <span asp-validation-for="NewResident.Purok" class="text-danger"></span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-civic">Save Resident</button>
+        </form>
+    </article>
+
+    <article class="panel-card">
+        <div class="panel-header">
+            <h2>Registered Residents</h2>
+            <span class="badge-soft">@Model.Residents.Count total</span>
+        </div>
+        <div class="table-shell">
+            <table class="table civic-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Household</th>
+                        <th>Contact</th>
+                        <th>Email</th>
+                        <th>Purok</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var resident in Model.Residents)
+                {
+                    <tr>
+                        <td>@resident.FullName</td>
+                        <td>@resident.HouseholdNo</td>
+                        <td>@resident.ContactNumber</td>
+                        <td>@resident.EmailAddress</td>
+                        <td>@resident.Purok</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

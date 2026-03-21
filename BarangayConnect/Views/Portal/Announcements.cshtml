@@ -1,0 +1,22 @@
+@model List<BarangayConnect.Models.Announcement>
+@{
+    ViewData["Title"] = "Announcements";
+}
+
+<section class="page-heading">
+    <p class="eyebrow">Information Center</p>
+    <h1>Barangay announcements and public notices</h1>
+    <p>Residents can quickly check community updates, events, and office reminders from one organized page.</p>
+</section>
+
+<section class="stack-grid">
+@foreach (var item in Model)
+{
+    <article class="panel-card">
+        <p class="feed-meta">@item.Category · @item.PublishedOn.ToString("MMMM dd, yyyy")</p>
+        <h2>@item.Title</h2>
+        <p>@item.Summary</p>
+        <span class="badge-soft">@item.Audience</span>
+    </article>
+}
+</section>

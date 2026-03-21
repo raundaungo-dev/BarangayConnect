@@ -1,0 +1,92 @@
+@model BarangayConnect.Models.RequestsPageViewModel
+@{
+    ViewData["Title"] = "Service Requests";
+}
+
+<section class="page-heading">
+    <p class="eyebrow">Request Desk</p>
+    <h1>Track non-appointment service requests from residents</h1>
+    <p>This workflow stores the resident-service relationship together with a description, priority level, and status for follow-up.</p>
+</section>
+
+@if (TempData["StatusMessage"] is string message)
+{
+    <div class="alert alert-success shadow-sm">@message</div>
+}
+
+<section class="form-layout">
+    <article class="panel-card">
+        <h2>Submit Request</h2>
+        <form asp-action="Requests" method="post" class="data-form">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="field-grid">
+                <div>
+                    <label asp-for="NewRequest.ResidentId"></label>
+                    <select asp-for="NewRequest.ResidentId" asp-items="Model.ResidentOptions" class="form-select">
+                        <option value="">Select resident</option>
+                    </select>
+                    <span asp-validation-for="NewRequest.ResidentId" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewRequest.ServiceId"></label>
+                    <select asp-for="NewRequest.ServiceId" asp-items="Model.ServiceOptions" class="form-select">
+                        <option value="">Select service</option>
+                    </select>
+                    <span asp-validation-for="NewRequest.ServiceId" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewRequest.Priority"></label>
+                    <select asp-for="NewRequest.Priority" class="form-select">
+                        <option>Normal</option>
+                        <option>High</option>
+                        <option>Urgent</option>
+                    </select>
+                    <span asp-validation-for="NewRequest.Priority" class="text-danger"></span>
+                </div>
+                <div class="full-span">
+                    <label asp-for="NewRequest.Description"></label>
+                    <textarea asp-for="NewRequest.Description" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="NewRequest.Description" class="text-danger"></span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-civic">Submit Request</button>
+        </form>
+    </article>
+
+    <article class="panel-card">
+        <div class="panel-header">
+            <h2>Request Log</h2>
+            <span class="badge-soft">@Model.Requests.Count listed</span>
+        </div>
+        <div class="table-shell">
+            <table class="table civic-table">
+                <thead>
+                    <tr>
+                        <th>Resident</th>
+                        <th>Service</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var request in Model.Requests)
+                {
+                    <tr>
+                        <td>@request.ResidentName</td>
+                        <td>@request.ServiceName</td>
+                        <td>@request.Priority</td>
+                        <td>@request.Status</td>
+                        <td>@request.SubmittedOn.ToString("MMM dd, yyyy")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,25 @@
+@model List<BarangayConnect.Models.Service>
+@{
+    ViewData["Title"] = "Services";
+}
+
+<section class="page-heading">
+    <p class="eyebrow">Service Catalog</p>
+    <h1>Available barangay services and office schedules</h1>
+    <p>This page provides the service information that supports the appointment and request transactions stored in the database.</p>
+</section>
+
+<section class="stack-grid">
+@foreach (var item in Model)
+{
+    <article class="panel-card">
+        <div class="panel-header">
+            <h2>@item.Name</h2>
+            <span class="badge-soft">@item.Office</span>
+        </div>
+        <p>@item.Description</p>
+        <p><strong>Schedule:</strong> @item.Schedule</p>
+        <p><strong>Requirements:</strong> @item.Requirements</p>
+    </article>
+}
+</section>

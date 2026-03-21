@@ -1,0 +1,106 @@
+@model BarangayConnect.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Barangay Dashboard";
+}
+
+<section class="hero-panel">
+    <div>
+        <p class="eyebrow">Community Service Platform</p>
+        <h1>BarangayConnect keeps resident services, appointments, and requests in one place.</h1>
+        <p class="hero-copy">
+            This ASP.NET Core web application simulates a digital service desk for a barangay or local government office.
+            It gives residents a central portal for information access and transaction tracking while helping staff manage records.
+        </p>
+    </div>
+    <div class="hero-card">
+        <h2>Quick Access</h2>
+        <a class="hero-link" asp-controller="Portal" asp-action="Residents">Register a resident</a>
+        <a class="hero-link" asp-controller="Portal" asp-action="Appointments">Book an appointment</a>
+        <a class="hero-link" asp-controller="Portal" asp-action="Requests">Submit a request</a>
+    </div>
+</section>
+
+<section class="stats-grid">
+    <article class="stat-card">
+        <span>Residents</span>
+        <strong>@Model.ResidentCount</strong>
+    </article>
+    <article class="stat-card">
+        <span>Appointments</span>
+        <strong>@Model.AppointmentCount</strong>
+    </article>
+    <article class="stat-card">
+        <span>Pending Requests</span>
+        <strong>@Model.PendingRequestCount</strong>
+    </article>
+    <article class="stat-card">
+        <span>Announcements</span>
+        <strong>@Model.ActiveAnnouncementCount</strong>
+    </article>
+</section>
+
+<section class="content-grid">
+    <article class="panel-card">
+        <div class="panel-header">
+            <h2>Recent Announcements</h2>
+            <a asp-controller="Portal" asp-action="Announcements">View all</a>
+        </div>
+        @foreach (var item in Model.RecentAnnouncements)
+        {
+            <div class="feed-item">
+                <p class="feed-meta">@item.Category · @item.PublishedOn.ToString("MMMM dd, yyyy")</p>
+                <h3>@item.Title</h3>
+                <p>@item.Summary</p>
+                <span class="badge-soft">@item.Audience</span>
+            </div>
+        }
+    </article>
+
+    <article class="panel-card">
+        <div class="panel-header">
+            <h2>Upcoming Appointments</h2>
+            <a asp-controller="Portal" asp-action="Appointments">Manage</a>
+        </div>
+        @foreach (var item in Model.UpcomingAppointments)
+        {
+            <div class="feed-item">
+                <p class="feed-meta">@item.AppointmentDate.ToString("MMMM dd, yyyy") · @item.TimeSlot</p>
+                <h3>@item.ResidentName</h3>
+                <p>@item.ServiceName</p>
+                <span class="badge-soft">@item.Status</span>
+            </div>
+        }
+    </article>
+
+    <article class="panel-card panel-card-wide">
+        <div class="panel-header">
+            <h2>Latest Service Requests</h2>
+            <a asp-controller="Portal" asp-action="Requests">Open request desk</a>
+        </div>
+        <div class="table-shell">
+            <table class="table civic-table">
+                <thead>
+                    <tr>
+                        <th>Resident</th>
+                        <th>Service</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.LatestRequests)
+                {
+                    <tr>
+                        <td>@item.ResidentName</td>
+                        <td>@item.ServiceName</td>
+                        <td>@item.Priority</td>
+                        <td>@item.Status</td>
+                        <td>@item.SubmittedOn.ToString("MMM dd, yyyy")</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
