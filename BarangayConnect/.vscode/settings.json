@@ -1,0 +1,9 @@
+{
+  "dotnet.defaultSolution": "BarangayConnect.sln",
+  "csharp.defaultLaunchSolution": "BarangayConnect.sln",
+  "omnisharp.enableRoslynAnalyzers": true,
+  "files.exclude": {
+    "**/bin": true,
+    "**/obj": true
+  }
+}
