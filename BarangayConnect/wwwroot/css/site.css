@@ -205,7 +205,6 @@ h1, h2, h3 {
   left: -3rem;
   top: -4rem;
   background: radial-gradient(circle, rgba(220, 165, 75, 0.22), transparent 65%);
-  animation: driftGlow 10s ease-in-out infinite;
 }
 
 .hero-panel::after {
@@ -695,6 +694,10 @@ h1, h2, h3 {
   margin-bottom: 1.25rem;
 }
 
+.documentation-section--final {
+  margin-bottom: 0;
+}
+
 .workflow-diagram {
   display: grid;
   grid-template-columns: repeat(9, auto);
@@ -768,6 +771,10 @@ h1, h2, h3 {
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid rgba(22, 60, 53, 0.09);
   overflow-x: auto;
+}
+
+.placeholder-note {
+  margin-bottom: 1rem;
 }
 
 .documentation-table td,
@@ -868,11 +875,6 @@ h1, h2, h3 {
 @keyframes navFloat {
   from { opacity: 0; transform: translateY(-18px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes driftGlow {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.75; }
-  50% { transform: translate3d(24px, 20px, 0) scale(1.1); opacity: 1; }
 }
 
 @media (max-width: 1100px) {

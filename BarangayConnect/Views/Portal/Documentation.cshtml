@@ -66,20 +66,6 @@
 
 <section class="panel-card documentation-section">
     <div class="panel-header">
-        <h2>Final Entity Relationship Diagram</h2>
-        <span class="badge-soft">Large and clear ERD</span>
-    </div>
-    <div class="erd-links">
-        <a class="btn btn-civic" href="@Model.ErdPdfPath" target="_blank" rel="noopener">Open ERD PDF</a>
-        <a class="btn btn-outline-civic" href="@Model.ErdImagePath" target="_blank" rel="noopener">Open ERD JPG</a>
-    </div>
-    <div class="erd-frame">
-        <img src="@Model.ErdImagePath" alt="BarangayConnect Entity Relationship Diagram" class="img-fluid" />
-    </div>
-</section>
-
-<section class="panel-card documentation-section">
-    <div class="panel-header">
         <h2>Entity Reference Document</h2>
         <span class="badge-soft">Formatted tables</span>
     </div>
@@ -119,6 +105,23 @@
             </div>
         </article>
     }
+    </div>
+</section>
+
+<section class="panel-card documentation-section documentation-section--final">
+    <div class="panel-header">
+        <h2>Final Entity Relationship Diagram</h2>
+        <span class="badge-soft">Placeholder image at page bottom</span>
+    </div>
+    <p class="placeholder-note">
+        The current ERD JPG below is a placeholder image. The downloadable PDF link is still available for the formal ERD file.
+    </p>
+    <div class="erd-links">
+        <a class="btn btn-civic" href="@Model.ErdPdfPath" target="_blank" rel="noopener">Open ERD PDF</a>
+        <a class="btn btn-outline-civic" href="@Model.ErdImagePath" target="_blank" rel="noopener">Open Placeholder JPG</a>
+    </div>
+    <div class="erd-frame">
+        <img src="@Model.ErdImagePath" alt="Placeholder ERD image" class="img-fluid" />
     </div>
 </section>
 
