@@ -3,10 +3,16 @@
     ViewData["Title"] = "Appointments";
 }
 
-<section class="page-heading">
-    <p class="eyebrow">Appointment Desk</p>
-    <h1>Schedule resident visits for barangay services</h1>
-    <p>Appointments connect residents and service records through foreign keys inside the local SQLite database.</p>
+<section class="page-heading page-heading--split">
+    <div>
+        <p class="eyebrow">Appointment Desk</p>
+        <h1>Schedule resident visits with clearer guidance and faster processing</h1>
+        <p>Appointments connect resident and service records through SQLite-backed relationships to keep visits organized and easy to trace.</p>
+    </div>
+    <div class="page-heading__card">
+        <strong>@Model.Appointments.Count</strong>
+        <span>appointments in the current list</span>
+    </div>
 </section>
 
 @if (TempData["StatusMessage"] is string message)
@@ -16,7 +22,10 @@
 
 <section class="form-layout">
     <article class="panel-card">
-        <h2>Book Appointment</h2>
+        <div class="panel-header">
+            <h2>Book Appointment</h2>
+            <span class="badge-soft">Resident service flow</span>
+        </div>
         <form asp-action="Appointments" method="post" class="data-form">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
@@ -42,12 +51,19 @@
                 </div>
                 <div>
                     <label asp-for="NewAppointment.TimeSlot"></label>
-                    <input asp-for="NewAppointment.TimeSlot" class="form-control" placeholder="10:00 AM - 10:30 AM" />
+                    <input asp-for="NewAppointment.TimeSlot" class="form-control" list="slot-suggestions" placeholder="10:00 AM - 10:30 AM" />
+                    <datalist id="slot-suggestions">
+                        <option value="8:00 AM - 8:30 AM"></option>
+                        <option value="9:00 AM - 9:30 AM"></option>
+                        <option value="10:00 AM - 10:30 AM"></option>
+                        <option value="1:00 PM - 1:30 PM"></option>
+                        <option value="2:00 PM - 2:30 PM"></option>
+                    </datalist>
                     <span asp-validation-for="NewAppointment.TimeSlot" class="text-danger"></span>
                 </div>
                 <div class="full-span">
                     <label asp-for="NewAppointment.Notes"></label>
-                    <textarea asp-for="NewAppointment.Notes" class="form-control" rows="3"></textarea>
+                    <textarea asp-for="NewAppointment.Notes" class="form-control" rows="3" placeholder="State the purpose of the visit and any document concerns."></textarea>
                     <span asp-validation-for="NewAppointment.Notes" class="text-danger"></span>
                 </div>
             </div>
@@ -57,11 +73,26 @@
 
     <article class="panel-card">
         <div class="panel-header">
+            <h2>Visit Preparation</h2>
+            <span class="badge-soft">Helpful feature</span>
+        </div>
+        <div class="info-list">
+            <div><strong>Before the visit:</strong> Confirm the resident record and service requirements first.</div>
+            <div><strong>Best practice:</strong> Keep notes short but specific so the front desk can prepare documents early.</div>
+            <div><strong>Suggested slots:</strong> Morning schedules are best for clearances and records requests.</div>
+        </div>
+    </article>
+
+    <article class="panel-card panel-card-wide">
+        <div class="panel-header">
             <h2>Scheduled Appointments</h2>
             <span class="badge-soft">@Model.Appointments.Count listed</span>
         </div>
+        <div class="filter-control filter-control--inline">
+            <input type="search" class="form-control" placeholder="Search by resident, service, slot, or status..." data-filter-input="#appointment-table" />
+        </div>
         <div class="table-shell">
-            <table class="table civic-table">
+            <table id="appointment-table" class="table civic-table">
                 <thead>
                     <tr>
                         <th>Date</th>
@@ -74,12 +105,12 @@
                 <tbody>
                 @foreach (var appointment in Model.Appointments)
                 {
-                    <tr>
+                    <tr data-filter-item data-filter-text="@($"{appointment.AppointmentDate:MMM dd yyyy} {appointment.ResidentName} {appointment.ServiceName} {appointment.TimeSlot} {appointment.Status}")">
                         <td>@appointment.AppointmentDate.ToString("MMM dd, yyyy")</td>
                         <td>@appointment.ResidentName</td>
                         <td>@appointment.ServiceName</td>
                         <td>@appointment.TimeSlot</td>
-                        <td>@appointment.Status</td>
+                        <td><span class="status-badge">@appointment.Status</span></td>
                     </tr>
                 }
                 </tbody>

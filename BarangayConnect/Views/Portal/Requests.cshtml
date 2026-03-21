@@ -3,10 +3,16 @@
     ViewData["Title"] = "Service Requests";
 }
 
-<section class="page-heading">
-    <p class="eyebrow">Request Desk</p>
-    <h1>Track non-appointment service requests from residents</h1>
-    <p>This workflow stores the resident-service relationship together with a description, priority level, and status for follow-up.</p>
+<section class="page-heading page-heading--split">
+    <div>
+        <p class="eyebrow">Request Desk</p>
+        <h1>Track resident concerns and follow-up requests with clearer prioritization</h1>
+        <p>This workflow stores resident-service links together with priority and status so follow-up is easier for staff and residents.</p>
+    </div>
+    <div class="page-heading__card">
+        <strong>@Model.Requests.Count</strong>
+        <span>requests in the current log</span>
+    </div>
 </section>
 
 @if (TempData["StatusMessage"] is string message)
@@ -16,7 +22,10 @@
 
 <section class="form-layout">
     <article class="panel-card">
-        <h2>Submit Request</h2>
+        <div class="panel-header">
+            <h2>Submit Request</h2>
+            <span class="badge-soft">Case intake</span>
+        </div>
         <form asp-action="Requests" method="post" class="data-form">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
@@ -46,7 +55,7 @@
                 </div>
                 <div class="full-span">
                     <label asp-for="NewRequest.Description"></label>
-                    <textarea asp-for="NewRequest.Description" class="form-control" rows="4"></textarea>
+                    <textarea asp-for="NewRequest.Description" class="form-control" rows="4" placeholder="Describe the request clearly, including deadline or context if needed."></textarea>
                     <span asp-validation-for="NewRequest.Description" class="text-danger"></span>
                 </div>
             </div>
@@ -56,11 +65,26 @@
 
     <article class="panel-card">
         <div class="panel-header">
+            <h2>Priority Guide</h2>
+            <span class="badge-soft">Helpful feature</span>
+        </div>
+        <div class="info-list">
+            <div><strong>Normal:</strong> Standard service follow-up without a strict deadline.</div>
+            <div><strong>High:</strong> Important request that should be reviewed earlier than the regular queue.</div>
+            <div><strong>Urgent:</strong> Time-sensitive concern that affects an immediate school, work, or legal requirement.</div>
+        </div>
+    </article>
+
+    <article class="panel-card panel-card-wide">
+        <div class="panel-header">
             <h2>Request Log</h2>
             <span class="badge-soft">@Model.Requests.Count listed</span>
         </div>
+        <div class="filter-control filter-control--inline">
+            <input type="search" class="form-control" placeholder="Search by resident, service, priority, or status..." data-filter-input="#request-table" />
+        </div>
         <div class="table-shell">
-            <table class="table civic-table">
+            <table id="request-table" class="table civic-table">
                 <thead>
                     <tr>
                         <th>Resident</th>
@@ -73,11 +97,11 @@
                 <tbody>
                 @foreach (var request in Model.Requests)
                 {
-                    <tr>
+                    <tr data-filter-item data-filter-text="@($"{request.ResidentName} {request.ServiceName} {request.Priority} {request.Status} {request.SubmittedOn:MMM dd yyyy}")">
                         <td>@request.ResidentName</td>
                         <td>@request.ServiceName</td>
-                        <td>@request.Priority</td>
-                        <td>@request.Status</td>
+                        <td><span class="priority-badge priority-badge--@request.Priority.ToLowerInvariant()">@request.Priority</span></td>
+                        <td><span class="status-badge">@request.Status</span></td>
                         <td>@request.SubmittedOn.ToString("MMM dd, yyyy")</td>
                     </tr>
                 }

@@ -1,19 +1,23 @@
 const animatedSelector = [
   ".page-heading",
+  ".page-heading__card",
   ".hero-panel",
   ".hero-card",
   ".stat-card",
+  ".feature-card",
   ".panel-card",
   ".feed-item",
   ".field-grid > div",
   ".data-form button",
   ".civic-table tbody tr",
-  ".site-footer .container"
+  ".contact-chip",
+  ".site-footer .footer-card"
 ].join(",");
 
 document.addEventListener("DOMContentLoaded", () => {
   markActiveNav();
   prepareAnimations();
+  wireFilters();
 });
 
 function markActiveNav() {
@@ -35,7 +39,7 @@ function prepareAnimations() {
 
   items.forEach((item, index) => {
     item.dataset.animate = getAnimationDirection(item, index);
-    item.style.setProperty("--delay", `${Math.min(index * 70, 480)}ms`);
+    item.style.setProperty("--delay", `${Math.min(index * 60, 540)}ms`);
   });
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -52,25 +56,47 @@ function prepareAnimations() {
       }
     });
   }, {
-    threshold: 0.12,
-    rootMargin: "0px 0px -40px 0px"
+    threshold: 0.1,
+    rootMargin: "0px 0px -48px 0px"
   });
 
   items.forEach((item) => observer.observe(item));
 }
 
 function getAnimationDirection(item, index) {
-  if (item.matches(".hero-panel, .hero-card, .stat-card")) {
+  if (item.matches(".hero-panel, .hero-card, .stat-card, .feature-card")) {
     return "zoom";
   }
 
-  if (item.matches(".page-heading")) {
+  if (item.matches(".page-heading, .panel-card:nth-of-type(odd), .contact-chip:nth-of-type(odd)")) {
     return "left";
   }
 
-  if (item.matches(".field-grid > div:nth-child(even), .civic-table tbody tr:nth-child(even)")) {
+  if (item.matches(".page-heading__card, .panel-card:nth-of-type(even), .contact-chip:nth-of-type(even), .civic-table tbody tr:nth-child(even)")) {
     return "right";
   }
 
   return index % 2 === 0 ? "left" : "right";
+}
+
+function wireFilters() {
+  document.querySelectorAll("[data-filter-input]").forEach((input) => {
+    const targetSelector = input.getAttribute("data-filter-input");
+    const container = document.querySelector(targetSelector);
+
+    if (!container) {
+      return;
+    }
+
+    const items = Array.from(container.querySelectorAll("[data-filter-item]"));
+    input.addEventListener("input", () => {
+      const query = input.value.trim().toLowerCase();
+
+      items.forEach((item) => {
+        const haystack = (item.getAttribute("data-filter-text") || item.textContent || "").toLowerCase();
+        const matches = !query || haystack.includes(query);
+        item.style.display = matches ? "" : "none";
+      });
+    });
+  });
 }

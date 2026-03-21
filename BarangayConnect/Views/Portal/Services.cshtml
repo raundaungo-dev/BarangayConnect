@@ -3,23 +3,44 @@
     ViewData["Title"] = "Services";
 }
 
-<section class="page-heading">
-    <p class="eyebrow">Service Catalog</p>
-    <h1>Available barangay services and office schedules</h1>
-    <p>This page provides the service information that supports the appointment and request transactions stored in the database.</p>
+<section class="page-heading page-heading--split">
+    <div>
+        <p class="eyebrow">Service Catalog</p>
+        <h1>Available barangay services, schedules, and requirements</h1>
+        <p>Residents can compare available services, check office schedules, and review requirements before scheduling a visit.</p>
+    </div>
+    <div class="page-heading__card">
+        <strong>@Model.Count</strong>
+        <span>services currently listed</span>
+    </div>
 </section>
 
-<section class="stack-grid">
+<section class="panel-card filter-toolbar">
+    <div>
+        <h2>Find a Service</h2>
+        <p>Search by service name, office, schedule, or requirement keyword.</p>
+    </div>
+    <div class="filter-control">
+        <input type="search" class="form-control" placeholder="Try clearance, permit, records, seminar..." data-filter-input="#service-list" />
+    </div>
+</section>
+
+<section id="service-list" class="stack-grid card-grid">
 @foreach (var item in Model)
 {
-    <article class="panel-card">
+    <article class="panel-card service-card" data-filter-item data-filter-text="@($"{item.Name} {item.Office} {item.Schedule} {item.Requirements} {item.Description}")">
         <div class="panel-header">
-            <h2>@item.Name</h2>
+            <div>
+                <h2>@item.Name</h2>
+                <p class="service-subtitle">@item.Office</p>
+            </div>
             <span class="badge-soft">@item.Office</span>
         </div>
         <p>@item.Description</p>
-        <p><strong>Schedule:</strong> @item.Schedule</p>
-        <p><strong>Requirements:</strong> @item.Requirements</p>
+        <div class="detail-stack">
+            <p><strong>Schedule</strong><span>@item.Schedule</span></p>
+            <p><strong>Requirements</strong><span>@item.Requirements</span></p>
+        </div>
     </article>
 }
 </section>

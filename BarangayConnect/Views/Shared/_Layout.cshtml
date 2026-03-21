@@ -1,23 +1,36 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - BarangayConnect</title>
     <script type="importmap"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/BarangayConnect.styles.css" asp-append-version="true" />
 </head>
 <body>
+    <div class="utility-strip">
+        <div class="container utility-strip__inner">
+            <div class="utility-pill">Community-first digital service portal</div>
+            <div class="utility-links">
+                <span>Office Hours: Mon-Fri, 8:00 AM - 5:00 PM</span>
+                <span>Hotline: (02) 8123-4567</span>
+            </div>
+        </div>
+    </div>
+
     <header class="site-header">
         <div class="container">
             <nav class="navbar navbar-expand-lg navbar-dark civic-nav">
                 <a class="navbar-brand brand-lockup" asp-area="" asp-controller="Portal" asp-action="Index">
-                    <span class="brand-badge">BC</span>
+                    <img src="~/images/barangayconnect-logo.svg" alt="BarangayConnect Logo" class="brand-logo" />
                     <span>
                         <strong>BarangayConnect</strong>
-                        <small>Resident Services Portal</small>
+                        <small>Smart Resident Services Portal</small>
                     </span>
                 </a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav"
@@ -25,7 +38,7 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="mainNav">
-                    <ul class="navbar-nav ms-auto">
+                    <ul class="navbar-nav ms-auto align-items-lg-center">
                         <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Index">Dashboard</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Announcements">Announcements</a></li>
                         <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Residents">Residents</a></li>
@@ -37,6 +50,7 @@
             </nav>
         </div>
     </header>
+
     <div class="container app-shell">
         <main role="main" class="pb-3">
             @RenderBody()
@@ -44,17 +58,27 @@
     </div>
 
     <footer class="site-footer">
-        <div class="container">
-            <div>
-                <strong>BarangayConnect</strong>
-                <p>ASP.NET Core MVC + SQLite institutional website for IT114L project submission.</p>
+        <div class="container footer-card">
+            <div class="footer-brand">
+                <img src="~/images/barangayconnect-logo.svg" alt="BarangayConnect Logo" class="footer-logo" />
+                <div>
+                    <strong>BarangayConnect</strong>
+                    <p>Modernized barangay service delivery with accessible information, scheduling, and request management.</p>
+                </div>
             </div>
-            <div class="footer-meta">
-                <span>&copy; 2026 BarangayConnect</span>
-                <span>Embedded local database</span>
+            <div class="footer-grid">
+                <div>
+                    <h3>Resident Support</h3>
+                    <p>Appointments, announcements, and service tracking in one local portal.</p>
+                </div>
+                <div>
+                    <h3>Quick Contact</h3>
+                    <p>(02) 8123-4567<br />support@barangayconnect.gov.local</p>
+                </div>
             </div>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>

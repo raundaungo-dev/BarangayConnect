@@ -3,17 +3,33 @@
     ViewData["Title"] = "Announcements";
 }
 
-<section class="page-heading">
-    <p class="eyebrow">Information Center</p>
-    <h1>Barangay announcements and public notices</h1>
-    <p>Residents can quickly check community updates, events, and office reminders from one organized page.</p>
+<section class="page-heading page-heading--split">
+    <div>
+        <p class="eyebrow">Information Center</p>
+        <h1>Community announcements and public notices</h1>
+        <p>Residents can quickly browse advisories, events, and office reminders from one searchable noticeboard.</p>
+    </div>
+    <div class="page-heading__card">
+        <strong>@Model.Count</strong>
+        <span>active public notices</span>
+    </div>
 </section>
 
-<section class="stack-grid">
+<section class="panel-card filter-toolbar">
+    <div>
+        <h2>Search Announcements</h2>
+        <p>Filter notices by title, category, audience, or summary.</p>
+    </div>
+    <div class="filter-control">
+        <input type="search" class="form-control" placeholder="Type keywords like health, scholarship, senior..." data-filter-input="#announcement-list" />
+    </div>
+</section>
+
+<section id="announcement-list" class="stack-grid">
 @foreach (var item in Model)
 {
-    <article class="panel-card">
-        <p class="feed-meta">@item.Category · @item.PublishedOn.ToString("MMMM dd, yyyy")</p>
+    <article class="panel-card" data-filter-item data-filter-text="@($"{item.Title} {item.Category} {item.Audience} {item.Summary}")">
+        <p class="feed-meta">@item.Category &middot; @item.PublishedOn.ToString("MMMM dd, yyyy")</p>
         <h2>@item.Title</h2>
         <p>@item.Summary</p>
         <span class="badge-soft">@item.Audience</span>

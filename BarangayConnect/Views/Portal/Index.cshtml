@@ -3,39 +3,88 @@
     ViewData["Title"] = "Barangay Dashboard";
 }
 
-<section class="hero-panel">
-    <div>
-        <p class="eyebrow">Community Service Platform</p>
-        <h1>BarangayConnect keeps resident services, appointments, and requests in one place.</h1>
+<section class="hero-panel hero-panel--expanded">
+    <div class="hero-copy-block">
+        <p class="eyebrow">Digital Civic Experience</p>
+        <h1>BarangayConnect turns local government services into a clear, trusted, and resident-friendly online portal.</h1>
         <p class="hero-copy">
-            This ASP.NET Core web application simulates a digital service desk for a barangay or local government office.
-            It gives residents a central portal for information access and transaction tracking while helping staff manage records.
+            Designed for barangays and community offices, the system brings together public information, resident records,
+            appointment scheduling, and service request tracking inside one responsive web application with a built-in SQL database.
         </p>
+        <div class="hero-actions">
+            <a class="btn btn-civic" asp-controller="Portal" asp-action="Appointments">Book a Service Visit</a>
+            <a class="btn btn-outline-civic" asp-controller="Portal" asp-action="Services">Explore Services</a>
+        </div>
+        <div class="hero-tags">
+            <span class="info-chip">Resident records</span>
+            <span class="info-chip">Announcements</span>
+            <span class="info-chip">Appointment scheduling</span>
+            <span class="info-chip">Request tracking</span>
+        </div>
     </div>
-    <div class="hero-card">
-        <h2>Quick Access</h2>
-        <a class="hero-link" asp-controller="Portal" asp-action="Residents">Register a resident</a>
-        <a class="hero-link" asp-controller="Portal" asp-action="Appointments">Book an appointment</a>
-        <a class="hero-link" asp-controller="Portal" asp-action="Requests">Submit a request</a>
-    </div>
+
+    <aside class="hero-card hero-card--spotlight">
+        <div class="status-kicker">Today at the Barangay Hall</div>
+        <h2>Service readiness snapshot</h2>
+        <div class="mini-stat-list">
+            <div>
+                <span>Open desks</span>
+                <strong>4 active</strong>
+            </div>
+            <div>
+                <span>Average queue</span>
+                <strong>12 mins</strong>
+            </div>
+            <div>
+                <span>Priority hotline</span>
+                <strong>(02) 8123-4567</strong>
+            </div>
+        </div>
+        <div class="notice-card">
+            <h3>Resident Reminder</h3>
+            <p>Bring a valid ID and any listed supporting documents before visiting the office for faster processing.</p>
+        </div>
+    </aside>
 </section>
 
 <section class="stats-grid">
-    <article class="stat-card">
+    <article class="stat-card stat-card--emerald">
         <span>Residents</span>
         <strong>@Model.ResidentCount</strong>
+        <p>Registered community members in the local directory.</p>
     </article>
-    <article class="stat-card">
+    <article class="stat-card stat-card--gold">
         <span>Appointments</span>
         <strong>@Model.AppointmentCount</strong>
+        <p>Scheduled service visits currently on record.</p>
     </article>
-    <article class="stat-card">
+    <article class="stat-card stat-card--teal">
         <span>Pending Requests</span>
         <strong>@Model.PendingRequestCount</strong>
+        <p>Open resident concerns and non-walk-in transactions.</p>
     </article>
-    <article class="stat-card">
+    <article class="stat-card stat-card--plum">
         <span>Announcements</span>
         <strong>@Model.ActiveAnnouncementCount</strong>
+        <p>Live updates published for the community.</p>
+    </article>
+</section>
+
+<section class="feature-band">
+    <article class="feature-card">
+        <span class="feature-icon">01</span>
+        <h2>Faster front-desk coordination</h2>
+        <p>Residents can prepare their visit ahead of time by checking schedules, requirements, and office updates online.</p>
+    </article>
+    <article class="feature-card">
+        <span class="feature-icon">02</span>
+        <h2>Clearer resident communication</h2>
+        <p>Public notices are easier to browse, while requests and appointments give both residents and staff a shared reference point.</p>
+    </article>
+    <article class="feature-card">
+        <span class="feature-icon">03</span>
+        <h2>Embedded and easy to maintain</h2>
+        <p>The system uses SQLite inside the source code, so it stays portable and still supports real SQL operations.</p>
     </article>
 </section>
 
@@ -48,7 +97,7 @@
         @foreach (var item in Model.RecentAnnouncements)
         {
             <div class="feed-item">
-                <p class="feed-meta">@item.Category · @item.PublishedOn.ToString("MMMM dd, yyyy")</p>
+                <p class="feed-meta">@item.Category &middot; @item.PublishedOn.ToString("MMMM dd, yyyy")</p>
                 <h3>@item.Title</h3>
                 <p>@item.Summary</p>
                 <span class="badge-soft">@item.Audience</span>
@@ -64,7 +113,7 @@
         @foreach (var item in Model.UpcomingAppointments)
         {
             <div class="feed-item">
-                <p class="feed-meta">@item.AppointmentDate.ToString("MMMM dd, yyyy") · @item.TimeSlot</p>
+                <p class="feed-meta">@item.AppointmentDate.ToString("MMMM dd, yyyy") &middot; @item.TimeSlot</p>
                 <h3>@item.ResidentName</h3>
                 <p>@item.ServiceName</p>
                 <span class="badge-soft">@item.Status</span>
@@ -94,13 +143,47 @@
                     <tr>
                         <td>@item.ResidentName</td>
                         <td>@item.ServiceName</td>
-                        <td>@item.Priority</td>
+                        <td><span class="priority-badge priority-badge--@item.Priority.ToLowerInvariant()">@item.Priority</span></td>
                         <td>@item.Status</td>
                         <td>@item.SubmittedOn.ToString("MMM dd, yyyy")</td>
                     </tr>
                 }
                 </tbody>
             </table>
+        </div>
+    </article>
+</section>
+
+<section class="content-grid content-grid--asymmetric">
+    <article class="panel-card">
+        <div class="panel-header">
+            <h2>Office Guide</h2>
+            <span class="badge-soft">Helpful feature</span>
+        </div>
+        <div class="timeline-list">
+            <div><strong>Step 1:</strong> Browse a service and confirm document requirements.</div>
+            <div><strong>Step 2:</strong> Register or verify the resident record in the portal.</div>
+            <div><strong>Step 3:</strong> Book an appointment or submit a request for follow-up.</div>
+        </div>
+    </article>
+    <article class="panel-card">
+        <div class="panel-header">
+            <h2>Emergency and Support</h2>
+            <span class="badge-soft">Always visible</span>
+        </div>
+        <div class="contact-grid">
+            <div class="contact-chip">
+                <span>Barangay Hall</span>
+                <strong>(02) 8123-4567</strong>
+            </div>
+            <div class="contact-chip">
+                <span>Health Desk</span>
+                <strong>(02) 8456-1098</strong>
+            </div>
+            <div class="contact-chip">
+                <span>Community Hotline</span>
+                <strong>0917-555-0188</strong>
+            </div>
         </div>
     </article>
 </section>
