@@ -5,11 +5,18 @@
       "label": "build",
       "command": "dotnet",
       "type": "process",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "args": [
         "build",
         "${workspaceFolder}/BarangayConnect.csproj"
       ],
-      "problemMatcher": "$msCompile"
+      "problemMatcher": "$msCompile",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
     },
     {
       "label": "watch",
@@ -21,7 +28,24 @@
         "--project",
         "${workspaceFolder}/BarangayConnect.csproj"
       ],
-      "problemMatcher": "$msCompile"
+      "problemMatcher": "$msCompile",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "run",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "run",
+        "--project",
+        "${workspaceFolder}/BarangayConnect.csproj"
+      ],
+      "problemMatcher": "$msCompile",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
     }
   ]
 }
