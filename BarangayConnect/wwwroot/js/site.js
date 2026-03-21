@@ -6,6 +6,8 @@ const animatedSelector = [
   ".stat-card",
   ".feature-card",
   ".panel-card",
+  ".preview-card",
+  ".sql-card",
   ".feed-item",
   ".field-grid > div",
   ".data-form button",
