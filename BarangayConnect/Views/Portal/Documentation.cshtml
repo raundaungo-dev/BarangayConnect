@@ -7,7 +7,7 @@
     <div>
         <p class="eyebrow">Project Documentation</p>
         <h1>System features, diagrams, screenshots, ERD, table reference, and SQL statement guide</h1>
-        <p>This page presents the complete website feature overview together with the database design and SQL operations used by the application.</p>
+        <p>This page presents the Banay-Banay Comms Network feature overview together with the database design and SQL operations used by the application.</p>
     </div>
     <div class="page-heading__card">
         <strong>Complete</strong>
@@ -97,7 +97,7 @@
                             <td>@column.Name</td>
                             <td>@column.DataType</td>
                             <td>@column.Description</td>
-                            <td>@(string.IsNullOrWhiteSpace(column.KeyType) ? "—" : column.KeyType)</td>
+                            <td>@(string.IsNullOrWhiteSpace(column.KeyType) ? "-" : column.KeyType)</td>
                         </tr>
                     }
                     </tbody>
@@ -105,23 +105,6 @@
             </div>
         </article>
     }
-    </div>
-</section>
-
-<section class="panel-card documentation-section documentation-section--final">
-    <div class="panel-header">
-        <h2>Final Entity Relationship Diagram</h2>
-        <span class="badge-soft">Placeholder image at page bottom</span>
-    </div>
-    <p class="placeholder-note">
-        The current ERD JPG below is a placeholder image. The downloadable PDF link is still available for the formal ERD file.
-    </p>
-    <div class="erd-links">
-        <a class="btn btn-civic" href="@Model.ErdPdfPath" target="_blank" rel="noopener">Open ERD PDF</a>
-        <a class="btn btn-outline-civic" href="@Model.ErdImagePath" target="_blank" rel="noopener">Open Placeholder JPG</a>
-    </div>
-    <div class="erd-frame">
-        <img src="@Model.ErdImagePath" alt="Placeholder ERD image" class="img-fluid" />
     </div>
 </section>
 
@@ -144,5 +127,22 @@
             <pre class="sql-block"><code>@statement.Sql</code></pre>
         </article>
     }
+    </div>
+</section>
+
+<section class="panel-card documentation-section documentation-section--final">
+    <div class="panel-header">
+        <h2>Final Entity Relationship Diagram</h2>
+        <span class="badge-soft">Placeholder image at page bottom</span>
+    </div>
+    <p class="placeholder-note">
+        The current ERD JPG below is a placeholder image. The downloadable PDF link is still available for the formal ERD file.
+    </p>
+    <div class="erd-links">
+        <a class="btn btn-civic" href="@Model.ErdPdfPath" target="_blank" rel="noopener">Open ERD PDF</a>
+        <a class="btn btn-outline-civic" href="@Model.ErdImagePath" target="_blank" rel="noopener">Open Placeholder JPG</a>
+    </div>
+    <div class="erd-frame">
+        <img src="@Model.ErdImagePath" alt="Placeholder ERD image" class="img-fluid" />
     </div>
 </section>

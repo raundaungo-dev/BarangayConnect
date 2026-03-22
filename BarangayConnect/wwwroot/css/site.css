@@ -1,21 +1,21 @@
 :root {
-  --bg: #f3efe4;
-  --bg-deep: #e5efe9;
+  --bg: #f2f4f8;
+  --bg-deep: #e4ebf4;
   --surface: rgba(255, 255, 255, 0.88);
   --surface-strong: #ffffff;
-  --ink: #1f2f2b;
-  --muted: #61716c;
-  --line: rgba(22, 48, 39, 0.11);
-  --forest: #163c35;
-  --emerald: #0f766e;
-  --mint: #d9f3e6;
-  --gold: #dca54b;
-  --gold-soft: #f5e4b5;
-  --plum: #7c3f58;
-  --teal: #0f766e;
+  --ink: #23324b;
+  --muted: #5f6e85;
+  --line: rgba(23, 60, 115, 0.11);
+  --forest: #214d3f;
+  --emerald: #2f6f57;
+  --mint: #e3f1ea;
+  --gold: #c9a13a;
+  --gold-soft: #efe1ae;
+  --plum: #5f6e85;
+  --teal: #1e5aa8;
   --danger: #b45309;
-  --shadow-lg: 0 24px 60px rgba(22, 44, 35, 0.14);
-  --shadow-md: 0 16px 36px rgba(22, 44, 35, 0.1);
+  --shadow-lg: 0 24px 60px rgba(23, 49, 85, 0.14);
+  --shadow-md: 0 16px 36px rgba(23, 49, 85, 0.1);
   --radius-xl: 32px;
   --radius-lg: 24px;
   --radius-md: 18px;
@@ -33,10 +33,10 @@ body {
   overflow-x: hidden;
   font-family: "Manrope", "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at top left, rgba(220, 165, 75, 0.2), transparent 24%),
-    radial-gradient(circle at 88% 10%, rgba(15, 118, 110, 0.15), transparent 22%),
-    radial-gradient(circle at 50% 100%, rgba(124, 63, 88, 0.12), transparent 28%),
-    linear-gradient(180deg, #fbf9f4 0%, var(--bg) 45%, var(--bg-deep) 100%);
+    radial-gradient(circle at top left, rgba(201, 161, 58, 0.17), transparent 24%),
+    radial-gradient(circle at 88% 10%, rgba(30, 90, 168, 0.14), transparent 22%),
+    radial-gradient(circle at 50% 100%, rgba(47, 111, 87, 0.1), transparent 28%),
+    linear-gradient(180deg, #f9fbfe 0%, var(--bg) 45%, var(--bg-deep) 100%);
 }
 
 a {
@@ -91,7 +91,7 @@ h1, h2, h3 {
   padding: 1rem 1.35rem;
   border-radius: 30px;
   background:
-    linear-gradient(135deg, rgba(18, 56, 50, 0.97), rgba(15, 118, 110, 0.9)),
+    linear-gradient(135deg, rgba(23, 60, 115, 0.97), rgba(30, 90, 168, 0.9)),
     linear-gradient(90deg, rgba(255, 255, 255, 0.08), transparent);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: var(--shadow-lg);
@@ -282,7 +282,7 @@ h1, h2, h3 {
 }
 
 .hero-card--spotlight {
-  background: linear-gradient(180deg, rgba(19, 61, 53, 0.98), rgba(15, 118, 110, 0.88));
+  background: linear-gradient(180deg, rgba(23, 60, 115, 0.98), rgba(30, 90, 168, 0.88));
   color: white;
 }
 
