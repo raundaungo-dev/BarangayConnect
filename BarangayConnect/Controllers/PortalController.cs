@@ -8,6 +8,8 @@ namespace BarangayConnect.Controllers;
 
 public class PortalController : Controller
 {
+    private const string SessionAccountId = "AccountId";
+    private const string SessionAccountRole = "AccountRole";
     private readonly PortalRepository _repository;
 
     public PortalController(PortalRepository repository)
@@ -15,14 +17,114 @@ public class PortalController : Controller
         _repository = repository;
     }
 
+    [HttpGet]
+    public IActionResult Login()
+    {
+        if (HttpContext.Session.GetInt32(SessionAccountId).HasValue)
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(new LoginViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Login(LoginViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var account = await _repository.GetAccountByCredentialsAsync(model.Username, model.Password);
+        if (account is null)
+        {
+            model.ErrorMessage = "Invalid username or password.";
+            return View(model);
+        }
+
+        HttpContext.Session.SetInt32(SessionAccountId, account.Id);
+        HttpContext.Session.SetString(SessionAccountRole, account.Role);
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpGet]
+    public IActionResult Register()
+    {
+        if (HttpContext.Session.GetInt32(SessionAccountId).HasValue)
+        {
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(new RegisterViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Register(RegisterViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        if (await _repository.UsernameExistsAsync(model.Username))
+        {
+            model.ErrorMessage = "That username is already taken.";
+            return View(model);
+        }
+
+        var accountId = await _repository.AddAccountAsync(model);
+        HttpContext.Session.SetInt32(SessionAccountId, accountId);
+        HttpContext.Session.SetString(SessionAccountRole, "User");
+        TempData["StatusMessage"] = "Account created successfully. You can now complete your resident profile.";
+        return RedirectToAction(nameof(Residents));
+    }
+
+    public IActionResult Logout()
+    {
+        HttpContext.Session.Clear();
+        return RedirectToAction(nameof(Login));
+    }
+
     public async Task<IActionResult> Index()
     {
-        var dashboard = await _repository.GetDashboardAsync();
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        var announcements = await _repository.GetAnnouncementsAsync();
+        var dashboard = new DashboardViewModel
+        {
+            DisplayName = account.DisplayName,
+            IsAdmin = IsAdmin(account),
+            RecentAnnouncements = announcements,
+            ActiveAnnouncementCount = announcements.Count
+        };
+
+        if (dashboard.IsAdmin)
+        {
+            dashboard.ResidentCount = await _repository.GetResidentCountAsync();
+            dashboard.AppointmentCount = await _repository.GetAppointmentCountAsync();
+            dashboard.PendingRequestCount = await _repository.GetPendingRequestCountAsync();
+            dashboard.UpcomingAppointments = await _repository.GetAppointmentsAsync();
+            dashboard.LatestRequests = await _repository.GetServiceRequestsAsync();
+        }
+
         return View(dashboard);
     }
 
     public async Task<IActionResult> Announcements()
     {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
         var announcements = await _repository.GetAnnouncementsAsync();
         return View(announcements);
     }
@@ -30,10 +132,26 @@ public class PortalController : Controller
     [HttpGet]
     public async Task<IActionResult> Residents()
     {
-        var residents = await _repository.GetResidentsAsync();
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (IsAdmin(account))
+        {
+            return View(new ResidentsPageViewModel
+            {
+                IsAdmin = true,
+                Residents = await _repository.GetResidentsAsync(),
+                NewResident = new ResidentInputModel()
+            });
+        }
+
         return View(new ResidentsPageViewModel
         {
-            Residents = residents,
+            IsAdmin = false,
+            CurrentResident = await GetCurrentResidentAsync(account),
             NewResident = new ResidentInputModel()
         });
     }
@@ -42,122 +160,200 @@ public class PortalController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Residents(ResidentsPageViewModel model)
     {
-        if (ModelState.IsValid)
+        var account = await RequireAccountAsync();
+        if (account is null)
         {
-            await _repository.AddResidentAsync(model.NewResident);
-            TempData["StatusMessage"] = "Resident record added successfully.";
-            return RedirectToAction(nameof(Residents));
+            return RedirectToAction(nameof(Login));
         }
 
-        model.Residents = await _repository.GetResidentsAsync();
-        return View(model);
+        if (!ModelState.IsValid)
+        {
+            model.IsAdmin = IsAdmin(account);
+            model.Residents = model.IsAdmin ? await _repository.GetResidentsAsync() : [];
+            model.CurrentResident = model.IsAdmin ? null : await GetCurrentResidentAsync(account);
+            return View(model);
+        }
+
+        var residentId = await _repository.AddResidentAsync(model.NewResident);
+
+        if (!IsAdmin(account) && !account.ResidentId.HasValue)
+        {
+            await _repository.AssignResidentToAccountAsync(account.Id, residentId);
+            HttpContext.Session.SetInt32(SessionAccountId, account.Id);
+        }
+
+        TempData["StatusMessage"] = "Resident record saved successfully.";
+        return RedirectToAction(nameof(Residents));
     }
 
     [HttpGet]
     public async Task<IActionResult> Services()
     {
-        var services = await _repository.GetServicesAsync();
-        return View(services);
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        return View(new ServicesPageViewModel
+        {
+            IsAdmin = IsAdmin(account),
+            Services = await _repository.GetServicesAsync(),
+            NewService = new ServiceInputModel()
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Services(ServicesPageViewModel model)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            return RedirectToAction(nameof(Services));
+        }
+
+        if (!ModelState.IsValid)
+        {
+            model.IsAdmin = true;
+            model.Services = await _repository.GetServicesAsync();
+            return View(model);
+        }
+
+        await _repository.AddServiceAsync(model.NewService);
+        TempData["StatusMessage"] = "Service added successfully.";
+        return RedirectToAction(nameof(Services));
     }
 
     [HttpGet]
     public async Task<IActionResult> Appointments()
     {
-        var viewModel = await BuildAppointmentsPageAsync(new AppointmentInputModel
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        return View(await BuildAppointmentsPageAsync(account, new AppointmentInputModel
         {
             AppointmentDate = DateTime.Today.AddDays(1)
-        });
-
-        return View(viewModel);
+        }));
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Appointments(AppointmentsPageViewModel model)
     {
-        if (ModelState.IsValid)
+        var account = await RequireAccountAsync();
+        if (account is null)
         {
-            await _repository.AddAppointmentAsync(model.NewAppointment);
-            TempData["StatusMessage"] = "Appointment scheduled successfully.";
-            return RedirectToAction(nameof(Appointments));
+            return RedirectToAction(nameof(Login));
         }
 
-        return View(await BuildAppointmentsPageAsync(model.NewAppointment));
+        if (!IsAdmin(account))
+        {
+            var currentResident = await GetCurrentResidentAsync(account);
+            if (currentResident is null)
+            {
+                TempData["StatusMessage"] = "Please register your resident profile first.";
+                return RedirectToAction(nameof(Residents));
+            }
+
+            model.NewAppointment.ResidentId = currentResident.Id;
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(await BuildAppointmentsPageAsync(account, model.NewAppointment));
+        }
+
+        await _repository.AddAppointmentAsync(model.NewAppointment);
+        TempData["StatusMessage"] = "Appointment scheduled successfully.";
+        return RedirectToAction(nameof(Appointments));
     }
 
     [HttpGet]
     public async Task<IActionResult> Requests()
     {
-        var viewModel = await BuildRequestsPageAsync(new ServiceRequestInputModel());
-        return View(viewModel);
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        return View(await BuildRequestsPageAsync(account, new ServiceRequestInputModel()));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Requests(RequestsPageViewModel model)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            var currentResident = await GetCurrentResidentAsync(account);
+            if (currentResident is null)
+            {
+                TempData["StatusMessage"] = "Please register your resident profile first.";
+                return RedirectToAction(nameof(Residents));
+            }
+
+            model.NewRequest.ResidentId = currentResident.Id;
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(await BuildRequestsPageAsync(account, model.NewRequest));
+        }
+
+        await _repository.AddServiceRequestAsync(model.NewRequest);
+        TempData["StatusMessage"] = "Service request submitted successfully.";
+        return RedirectToAction(nameof(Requests));
     }
 
     [HttpGet]
-    public IActionResult Documentation()
+    public async Task<IActionResult> Documentation()
     {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Documentation is only available to administrator accounts.";
+            return RedirectToAction(nameof(Index));
+        }
+
         var model = new SystemDocumentationViewModel
         {
             ErdImagePath = "/docs/Final-ERD.jpg",
             ErdPdfPath = "/docs/Final-ERD.pdf",
             Features =
             [
-                new FeatureHighlight
-                {
-                    Title = "Resident Registry",
-                    Description = "Stores core resident records used by appointments and request transactions.",
-                    Route = "/Portal/Residents"
-                },
-                new FeatureHighlight
-                {
-                    Title = "Announcements Board",
-                    Description = "Publishes public notices, schedules, and community updates in one page.",
-                    Route = "/Portal/Announcements"
-                },
-                new FeatureHighlight
-                {
-                    Title = "Service Catalog",
-                    Description = "Lists available barangay services together with office schedules and document requirements.",
-                    Route = "/Portal/Services"
-                },
-                new FeatureHighlight
-                {
-                    Title = "Appointment Scheduling",
-                    Description = "Allows residents to reserve service slots that link to both resident and service records.",
-                    Route = "/Portal/Appointments"
-                },
-                new FeatureHighlight
-                {
-                    Title = "Service Request Tracking",
-                    Description = "Captures follow-up requests with description, priority, and status tracking.",
-                    Route = "/Portal/Requests"
-                }
+                new FeatureHighlight { Title = "Resident Registry", Description = "Stores core resident records used by appointments and request transactions.", Route = "/Portal/Residents" },
+                new FeatureHighlight { Title = "Announcements Board", Description = "Publishes public notices, schedules, and community updates in one page.", Route = "/Portal/Announcements" },
+                new FeatureHighlight { Title = "Service Catalog", Description = "Lists available barangay services together with office schedules and document requirements.", Route = "/Portal/Services" },
+                new FeatureHighlight { Title = "Appointment Scheduling", Description = "Allows residents to reserve service slots that link to both resident and service records.", Route = "/Portal/Appointments" },
+                new FeatureHighlight { Title = "Service Request Tracking", Description = "Captures follow-up requests with description, priority, and status tracking.", Route = "/Portal/Requests" }
             ],
             Previews =
             [
-                new ScreenPreview
-                {
-                    Title = "Dashboard Preview",
-                    Description = "Shows the main civic dashboard with statistics, updates, and service access.",
-                    Route = "/Portal/Index"
-                },
-                new ScreenPreview
-                {
-                    Title = "Residents Preview",
-                    Description = "Displays the resident registry form and searchable resident table.",
-                    Route = "/Portal/Residents"
-                },
-                new ScreenPreview
-                {
-                    Title = "Appointments Preview",
-                    Description = "Shows the appointment form and scheduled visits table.",
-                    Route = "/Portal/Appointments"
-                },
-                new ScreenPreview
-                {
-                    Title = "Requests Preview",
-                    Description = "Displays the request intake form and tracking table.",
-                    Route = "/Portal/Requests"
-                }
+                new ScreenPreview { Title = "Dashboard Preview", Description = "Shows the main civic dashboard with statistics, updates, and service access.", Route = "/Portal/Index" },
+                new ScreenPreview { Title = "Residents Preview", Description = "Displays the resident registry form and searchable resident table.", Route = "/Portal/Residents" },
+                new ScreenPreview { Title = "Appointments Preview", Description = "Shows the appointment form and scheduled visits table.", Route = "/Portal/Appointments" },
+                new ScreenPreview { Title = "Requests Preview", Description = "Displays the request intake form and tracking table.", Route = "/Portal/Requests" }
             ],
             Tables =
             [
@@ -174,6 +370,20 @@ public class PortalController : Controller
                         new ColumnReference { Name = "EmailAddress", DataType = "TEXT", Description = "Resident email address", KeyType = "" },
                         new ColumnReference { Name = "Purok", DataType = "TEXT", Description = "Purok or zone assignment", KeyType = "" },
                         new ColumnReference { Name = "RegisteredOn", DataType = "TEXT", Description = "Registration date", KeyType = "" }
+                    ]
+                },
+                new DatabaseTableReference
+                {
+                    TableName = "Accounts",
+                    Summary = "Stores login accounts for admins and resident users.",
+                    Columns =
+                    [
+                        new ColumnReference { Name = "AccountId", DataType = "INTEGER", Description = "Unique account identifier", KeyType = "Primary Key" },
+                        new ColumnReference { Name = "Username", DataType = "TEXT", Description = "Login username", KeyType = "" },
+                        new ColumnReference { Name = "Password", DataType = "TEXT", Description = "Demo password value", KeyType = "" },
+                        new ColumnReference { Name = "DisplayName", DataType = "TEXT", Description = "Name shown in the interface", KeyType = "" },
+                        new ColumnReference { Name = "Role", DataType = "TEXT", Description = "Admin or User role", KeyType = "" },
+                        new ColumnReference { Name = "ResidentId", DataType = "INTEGER", Description = "Linked resident profile", KeyType = "Foreign Key -> Residents.ResidentId" }
                     ]
                 },
                 new DatabaseTableReference
@@ -234,195 +444,40 @@ public class PortalController : Controller
                         new ColumnReference { Name = "SubmittedOn", DataType = "TEXT", Description = "Submission date", KeyType = "" }
                     ]
                 }
-            ],
-            SqlStatements =
-            [
-                new SqlStatementReference { Label = "Create Residents Table", Category = "Schema", Sql = """
-                    CREATE TABLE IF NOT EXISTS Residents (
-                        ResidentId INTEGER PRIMARY KEY AUTOINCREMENT,
-                        FullName TEXT NOT NULL,
-                        HouseholdNo TEXT NOT NULL,
-                        ContactNumber TEXT NOT NULL,
-                        EmailAddress TEXT NOT NULL,
-                        Purok TEXT NOT NULL,
-                        RegisteredOn TEXT NOT NULL
-                    );
-                    """ },
-                new SqlStatementReference { Label = "Create Services Table", Category = "Schema", Sql = """
-                    CREATE TABLE IF NOT EXISTS Services (
-                        ServiceId INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Name TEXT NOT NULL,
-                        Office TEXT NOT NULL,
-                        Description TEXT NOT NULL,
-                        Schedule TEXT NOT NULL,
-                        Requirements TEXT NOT NULL
-                    );
-                    """ },
-                new SqlStatementReference { Label = "Create Announcements Table", Category = "Schema", Sql = """
-                    CREATE TABLE IF NOT EXISTS Announcements (
-                        AnnouncementId INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Title TEXT NOT NULL,
-                        Category TEXT NOT NULL,
-                        Summary TEXT NOT NULL,
-                        PublishedOn TEXT NOT NULL,
-                        Audience TEXT NOT NULL
-                    );
-                    """ },
-                new SqlStatementReference { Label = "Create Appointments Table", Category = "Schema", Sql = """
-                    CREATE TABLE IF NOT EXISTS Appointments (
-                        AppointmentId INTEGER PRIMARY KEY AUTOINCREMENT,
-                        ResidentId INTEGER NOT NULL,
-                        ServiceId INTEGER NOT NULL,
-                        AppointmentDate TEXT NOT NULL,
-                        TimeSlot TEXT NOT NULL,
-                        Status TEXT NOT NULL,
-                        Notes TEXT NOT NULL,
-                        FOREIGN KEY (ResidentId) REFERENCES Residents(ResidentId),
-                        FOREIGN KEY (ServiceId) REFERENCES Services(ServiceId)
-                    );
-                    """ },
-                new SqlStatementReference { Label = "Create ServiceRequests Table", Category = "Schema", Sql = """
-                    CREATE TABLE IF NOT EXISTS ServiceRequests (
-                        RequestId INTEGER PRIMARY KEY AUTOINCREMENT,
-                        ResidentId INTEGER NOT NULL,
-                        ServiceId INTEGER NOT NULL,
-                        Description TEXT NOT NULL,
-                        Priority TEXT NOT NULL,
-                        Status TEXT NOT NULL,
-                        SubmittedOn TEXT NOT NULL,
-                        FOREIGN KEY (ResidentId) REFERENCES Residents(ResidentId),
-                        FOREIGN KEY (ServiceId) REFERENCES Services(ServiceId)
-                    );
-                    """ },
-                new SqlStatementReference { Label = "Dashboard Counts", Category = "Read", Sql = """
-                    SELECT COUNT(*) FROM Residents;
-
-                    SELECT COUNT(*) FROM Appointments;
-
-                    SELECT COUNT(*)
-                    FROM ServiceRequests
-                    WHERE Status <> 'Completed';
-
-                    SELECT COUNT(*) FROM Announcements;
-                    """ },
-                new SqlStatementReference { Label = "Get Announcements", Category = "Read", Sql = """
-                    SELECT AnnouncementId, Title, Category, Summary, PublishedOn, Audience
-                    FROM Announcements
-                    ORDER BY date(PublishedOn) DESC
-                    LIMIT 6;
-                    """ },
-                new SqlStatementReference { Label = "Get Residents", Category = "Read", Sql = """
-                    SELECT ResidentId, FullName, HouseholdNo, ContactNumber, EmailAddress, Purok, RegisteredOn
-                    FROM Residents
-                    ORDER BY FullName;
-                    """ },
-                new SqlStatementReference { Label = "Insert Resident", Category = "Write", Sql = """
-                    INSERT INTO Residents (
-                        FullName,
-                        HouseholdNo,
-                        ContactNumber,
-                        EmailAddress,
-                        Purok,
-                        RegisteredOn
-                    )
-                    VALUES (
-                        @FullName,
-                        @HouseholdNo,
-                        @ContactNumber,
-                        @EmailAddress,
-                        @Purok,
-                        @RegisteredOn
-                    );
-                    """ },
-                new SqlStatementReference { Label = "Get Services", Category = "Read", Sql = """
-                    SELECT ServiceId, Name, Office, Description, Schedule, Requirements
-                    FROM Services
-                    ORDER BY Name;
-                    """ },
-                new SqlStatementReference { Label = "Get Appointments", Category = "Read", Sql = """
-                    SELECT
-                        a.AppointmentId,
-                        r.FullName,
-                        s.Name,
-                        a.AppointmentDate,
-                        a.TimeSlot,
-                        a.Status,
-                        a.Notes
-                    FROM Appointments a
-                    INNER JOIN Residents r ON r.ResidentId = a.ResidentId
-                    INNER JOIN Services s ON s.ServiceId = a.ServiceId
-                    ORDER BY date(a.AppointmentDate), a.TimeSlot
-                    LIMIT 8;
-                    """ },
-                new SqlStatementReference { Label = "Insert Appointment", Category = "Write", Sql = """
-                    INSERT INTO Appointments (
-                        ResidentId,
-                        ServiceId,
-                        AppointmentDate,
-                        TimeSlot,
-                        Status,
-                        Notes
-                    )
-                    VALUES (
-                        @ResidentId,
-                        @ServiceId,
-                        @AppointmentDate,
-                        @TimeSlot,
-                        'Scheduled',
-                        @Notes
-                    );
-                    """ },
-                new SqlStatementReference { Label = "Get Service Requests", Category = "Read", Sql = """
-                    SELECT
-                        sr.RequestId,
-                        r.FullName,
-                        s.Name,
-                        sr.Description,
-                        sr.Priority,
-                        sr.Status,
-                        sr.SubmittedOn
-                    FROM ServiceRequests sr
-                    INNER JOIN Residents r ON r.ResidentId = sr.ResidentId
-                    INNER JOIN Services s ON s.ServiceId = sr.ServiceId
-                    ORDER BY date(sr.SubmittedOn) DESC, sr.RequestId DESC
-                    LIMIT 8;
-                    """ },
-                new SqlStatementReference { Label = "Insert Service Request", Category = "Write", Sql = """
-                    INSERT INTO ServiceRequests (
-                        ResidentId,
-                        ServiceId,
-                        Description,
-                        Priority,
-                        Status,
-                        SubmittedOn
-                    )
-                    VALUES (
-                        @ResidentId,
-                        @ServiceId,
-                        @Description,
-                        @Priority,
-                        'Pending',
-                        @SubmittedOn
-                    );
-                    """ }
             ]
         };
 
+        model.SqlStatements =
+        [
+            new SqlStatementReference { Label = "Create Accounts Table", Category = "Schema", Sql = """
+                CREATE TABLE IF NOT EXISTS Accounts (
+                    AccountId INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Username TEXT NOT NULL UNIQUE,
+                    Password TEXT NOT NULL,
+                    DisplayName TEXT NOT NULL,
+                    Role TEXT NOT NULL,
+                    ResidentId INTEGER NULL,
+                    FOREIGN KEY (ResidentId) REFERENCES Residents(ResidentId)
+                );
+                """ },
+            new SqlStatementReference { Label = "Get Account By Credentials", Category = "Read", Sql = """
+                SELECT AccountId, Username, Password, DisplayName, Role, ResidentId
+                FROM Accounts
+                WHERE lower(Username) = lower(@Username) AND Password = @Password
+                LIMIT 1;
+                """ },
+            new SqlStatementReference { Label = "Assign Resident To Account", Category = "Write", Sql = """
+                UPDATE Accounts
+                SET ResidentId = @ResidentId
+                WHERE AccountId = @AccountId;
+                """ },
+            new SqlStatementReference { Label = "Insert Service", Category = "Write", Sql = """
+                INSERT INTO Services (Name, Office, Description, Schedule, Requirements)
+                VALUES (@Name, @Office, @Description, @Schedule, @Requirements);
+                """ }
+        ];
+
         return View(model);
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Requests(RequestsPageViewModel model)
-    {
-        if (ModelState.IsValid)
-        {
-            await _repository.AddServiceRequestAsync(model.NewRequest);
-            TempData["StatusMessage"] = "Service request submitted successfully.";
-            return RedirectToAction(nameof(Requests));
-        }
-
-        return View(await BuildRequestsPageAsync(model.NewRequest));
     }
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
@@ -434,45 +489,82 @@ public class PortalController : Controller
         });
     }
 
-    private async Task<AppointmentsPageViewModel> BuildAppointmentsPageAsync(AppointmentInputModel inputModel)
+    private async Task<AppointmentsPageViewModel> BuildAppointmentsPageAsync(Account account, AppointmentInputModel inputModel)
     {
-        var residents = await _repository.GetResidentsAsync();
+        var isAdmin = IsAdmin(account);
+        var currentResident = await GetCurrentResidentAsync(account);
+        var residents = isAdmin ? await _repository.GetResidentsAsync() : currentResident is null ? [] : [currentResident];
         var services = await _repository.GetServicesAsync();
-        var appointments = await _repository.GetAppointmentsAsync();
+        var appointments = await _repository.GetAppointmentsAsync(isAdmin ? null : currentResident?.Id);
+
+        if (!isAdmin && currentResident is not null)
+        {
+            inputModel.ResidentId = currentResident.Id;
+        }
 
         return new AppointmentsPageViewModel
         {
+            IsAdmin = isAdmin,
+            CurrentResident = currentResident,
             Residents = residents,
             Services = services,
             Appointments = appointments,
             NewAppointment = inputModel,
-            ResidentOptions = residents
-                .Select(resident => new SelectListItem(resident.FullName, resident.Id.ToString()))
-                .ToList(),
-            ServiceOptions = services
-                .Select(service => new SelectListItem(service.Name, service.Id.ToString()))
-                .ToList()
+            ResidentOptions = residents.Select(resident => new SelectListItem(resident.FullName, resident.Id.ToString())).ToList(),
+            ServiceOptions = services.Select(service => new SelectListItem(service.Name, service.Id.ToString())).ToList()
         };
     }
 
-    private async Task<RequestsPageViewModel> BuildRequestsPageAsync(ServiceRequestInputModel inputModel)
+    private async Task<RequestsPageViewModel> BuildRequestsPageAsync(Account account, ServiceRequestInputModel inputModel)
     {
-        var residents = await _repository.GetResidentsAsync();
+        var isAdmin = IsAdmin(account);
+        var currentResident = await GetCurrentResidentAsync(account);
+        var residents = isAdmin ? await _repository.GetResidentsAsync() : currentResident is null ? [] : [currentResident];
         var services = await _repository.GetServicesAsync();
-        var requests = await _repository.GetServiceRequestsAsync();
+        var requests = await _repository.GetServiceRequestsAsync(isAdmin ? null : currentResident?.Id);
+
+        if (!isAdmin && currentResident is not null)
+        {
+            inputModel.ResidentId = currentResident.Id;
+        }
 
         return new RequestsPageViewModel
         {
+            IsAdmin = isAdmin,
+            CurrentResident = currentResident,
             Residents = residents,
             Services = services,
             Requests = requests,
             NewRequest = inputModel,
-            ResidentOptions = residents
-                .Select(resident => new SelectListItem(resident.FullName, resident.Id.ToString()))
-                .ToList(),
-            ServiceOptions = services
-                .Select(service => new SelectListItem(service.Name, service.Id.ToString()))
-                .ToList()
+            ResidentOptions = residents.Select(resident => new SelectListItem(resident.FullName, resident.Id.ToString())).ToList(),
+            ServiceOptions = services.Select(service => new SelectListItem(service.Name, service.Id.ToString())).ToList()
         };
     }
+
+    private async Task<Account?> RequireAccountAsync()
+    {
+        var accountId = HttpContext.Session.GetInt32(SessionAccountId);
+        if (!accountId.HasValue)
+        {
+            return null;
+        }
+
+        var account = await _repository.GetAccountByIdAsync(accountId.Value);
+        if (account is not null)
+        {
+            HttpContext.Session.SetString(SessionAccountRole, account.Role);
+        }
+
+        return account;
+    }
+
+    private async Task<Resident?> GetCurrentResidentAsync(Account account)
+    {
+        return account.ResidentId.HasValue
+            ? await _repository.GetResidentByIdAsync(account.ResidentId.Value)
+            : null;
+    }
+
+    private static bool IsAdmin(Account account) =>
+        string.Equals(account.Role, "Admin", StringComparison.OrdinalIgnoreCase);
 }

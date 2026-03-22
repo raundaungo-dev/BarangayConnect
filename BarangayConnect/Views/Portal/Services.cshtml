@@ -1,4 +1,4 @@
-@model List<BarangayConnect.Models.Service>
+@model BarangayConnect.Models.ServicesPageViewModel
 @{
     ViewData["Title"] = "Services";
 }
@@ -7,28 +7,65 @@
     <div>
         <p class="eyebrow">Service Catalog</p>
         <h1>Available barangay services, schedules, and requirements</h1>
-        <p>Residents can compare available services, check office schedules, and review requirements before scheduling a visit.</p>
+        <p>Services are visible to both admins and resident users. Only admin accounts can add new services.</p>
     </div>
     <div class="page-heading__card">
-        <strong>@Model.Count</strong>
+        <strong>@Model.Services.Count</strong>
         <span>services currently listed</span>
     </div>
 </section>
 
-<section class="panel-card filter-toolbar">
-    <div>
-        <h2>Find a Service</h2>
-        <p>Search by service name, office, schedule, or requirement keyword.</p>
-    </div>
-    <div class="filter-control">
-        <input type="search" class="form-control" placeholder="Try clearance, permit, records, seminar..." data-filter-input="#service-list" />
-    </div>
-</section>
-
-<section id="service-list" class="stack-grid card-grid">
-@foreach (var item in Model)
+@if (TempData["StatusMessage"] is string serviceMessage)
 {
-    <article class="panel-card service-card" data-filter-item data-filter-text="@($"{item.Name} {item.Office} {item.Schedule} {item.Requirements} {item.Description}")">
+    <div class="alert alert-success shadow-sm">@serviceMessage</div>
+}
+
+@if (Model.IsAdmin)
+{
+    <section class="panel-card documentation-section">
+        <div class="panel-header">
+            <h2>Add Service</h2>
+            <span class="badge-soft">Admin only</span>
+        </div>
+        <form asp-action="Services" method="post" class="data-form">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="field-grid">
+                <div>
+                    <label asp-for="NewService.Name"></label>
+                    <input asp-for="NewService.Name" class="form-control" />
+                    <span asp-validation-for="NewService.Name" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewService.Office"></label>
+                    <input asp-for="NewService.Office" class="form-control" />
+                    <span asp-validation-for="NewService.Office" class="text-danger"></span>
+                </div>
+                <div class="full-span">
+                    <label asp-for="NewService.Description"></label>
+                    <textarea asp-for="NewService.Description" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="NewService.Description" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewService.Schedule"></label>
+                    <input asp-for="NewService.Schedule" class="form-control" />
+                    <span asp-validation-for="NewService.Schedule" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewService.Requirements"></label>
+                    <input asp-for="NewService.Requirements" class="form-control" />
+                    <span asp-validation-for="NewService.Requirements" class="text-danger"></span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-civic">Add Service</button>
+        </form>
+    </section>
+}
+
+<section class="stack-grid card-grid">
+@foreach (var item in Model.Services)
+{
+    <article class="panel-card service-card">
         <div class="panel-header">
             <div>
                 <h2>@item.Name</h2>
@@ -44,3 +81,7 @@
     </article>
 }
 </section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

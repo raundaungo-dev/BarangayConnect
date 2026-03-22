@@ -3,92 +3,71 @@
     ViewData["Title"] = "Banay-Banay Dashboard";
 }
 
-<section class="hero-panel hero-panel--expanded">
+<section class="hero-panel hero-panel--expanded dashboard-hero">
     <div class="hero-copy-block">
         <p class="eyebrow">Official Communications and Services</p>
-        <h1>Banay-Banay Comms Network</h1>
+        <h1>Welcome, @Model.DisplayName.</h1>
         <p class="hero-copy">
-            Tailored for Barangay Banay-Banay, Cabuyao, the system brings together public information, resident records,
-            appointment scheduling, and service request tracking inside one responsive web application with a built-in SQL database.
+            Banay-Banay Comms Network gives residents and barangay staff a secure portal for announcements,
+            appointments, service requests, and official service information.
         </p>
         <div class="hero-actions">
-            <a class="btn btn-civic" asp-controller="Portal" asp-action="Appointments">Book a Service Visit</a>
-            <a class="btn btn-outline-civic" asp-controller="Portal" asp-action="Services">Explore Services</a>
-        </div>
-        <div class="hero-tags">
-            <span class="info-chip">Resident records</span>
-            <span class="info-chip">Announcements</span>
-            <span class="info-chip">Appointment scheduling</span>
-            <span class="info-chip">Request tracking</span>
+            <a class="btn btn-civic" asp-controller="Portal" asp-action="Announcements">View Announcements</a>
+            <a class="btn btn-outline-civic" asp-controller="Portal" asp-action="Services">Browse Services</a>
         </div>
     </div>
 
     <aside class="hero-card hero-card--spotlight">
         <div class="status-kicker">Barangay Banay-Banay Operations Desk</div>
-        <h2>Service readiness snapshot</h2>
+        <h2>@(Model.IsAdmin ? "Admin access is active" : "Resident access is active")</h2>
         <div class="mini-stat-list">
             <div>
-                <span>Open desks</span>
-                <strong>4 active</strong>
+                <span>Account Type</span>
+                <strong>@(Model.IsAdmin ? "Administrator" : "Resident User")</strong>
             </div>
             <div>
-                <span>Average queue</span>
-                <strong>12 mins</strong>
+                <span>Announcement Access</span>
+                <strong>Available to all accounts</strong>
             </div>
             <div>
-                <span>Priority hotline</span>
+                <span>Primary Hotline</span>
                 <strong>(02) 8123-4567</strong>
             </div>
         </div>
         <div class="notice-card">
-            <h3>Resident Reminder</h3>
-            <p>Bring a valid ID and the required supporting documents before visiting the barangay hall for faster processing.</p>
+            <h3>Portal Reminder</h3>
+            <p>@(Model.IsAdmin ? "Admin accounts can review appointments, resident information, requests, and add services." : "Resident accounts can only view their own appointments and requests, while services and announcements remain visible.")</p>
         </div>
     </aside>
 </section>
 
-<section class="stats-grid">
-    <article class="stat-card stat-card--emerald">
-        <span>Residents</span>
-        <strong>@Model.ResidentCount</strong>
-        <p>Registered community members in the local directory.</p>
-    </article>
-    <article class="stat-card stat-card--gold">
-        <span>Appointments</span>
-        <strong>@Model.AppointmentCount</strong>
-        <p>Scheduled service visits currently on record.</p>
-    </article>
-    <article class="stat-card stat-card--teal">
-        <span>Pending Requests</span>
-        <strong>@Model.PendingRequestCount</strong>
-        <p>Open resident concerns and non-walk-in transactions.</p>
-    </article>
-    <article class="stat-card stat-card--plum">
-        <span>Announcements</span>
-        <strong>@Model.ActiveAnnouncementCount</strong>
-        <p>Live updates published for the community.</p>
-    </article>
-</section>
+@if (Model.IsAdmin)
+{
+    <section class="stats-grid dashboard-stats">
+        <article class="stat-card stat-card--emerald">
+            <span>Residents</span>
+            <strong>@Model.ResidentCount</strong>
+            <p>Registered community members in the local directory.</p>
+        </article>
+        <article class="stat-card stat-card--gold">
+            <span>Appointments</span>
+            <strong>@Model.AppointmentCount</strong>
+            <p>Scheduled service visits currently on record.</p>
+        </article>
+        <article class="stat-card stat-card--teal">
+            <span>Pending Requests</span>
+            <strong>@Model.PendingRequestCount</strong>
+            <p>Open resident concerns and non-walk-in transactions.</p>
+        </article>
+        <article class="stat-card stat-card--plum">
+            <span>Announcements</span>
+            <strong>@Model.ActiveAnnouncementCount</strong>
+            <p>Live updates published for the community.</p>
+        </article>
+    </section>
+}
 
-<section class="feature-band">
-    <article class="feature-card">
-        <span class="feature-icon">01</span>
-        <h2>Faster front-desk coordination</h2>
-        <p>Residents can prepare their visit ahead of time by checking schedules, requirements, and office updates online.</p>
-    </article>
-    <article class="feature-card">
-        <span class="feature-icon">02</span>
-        <h2>Clearer resident communication</h2>
-        <p>Public notices are easier to browse, while requests and appointments give both residents and staff a shared reference point.</p>
-    </article>
-    <article class="feature-card">
-        <span class="feature-icon">03</span>
-        <h2>Embedded and easy to maintain</h2>
-        <p>The system uses SQLite inside the source code, so the platform stays portable and easy to maintain for barangay staff.</p>
-    </article>
-</section>
-
-<section class="content-grid">
+<section class="content-grid dashboard-grid">
     <article class="panel-card">
         <div class="panel-header">
             <h2>Recent Announcements</h2>
@@ -107,83 +86,73 @@
 
     <article class="panel-card">
         <div class="panel-header">
-            <h2>Upcoming Appointments</h2>
-            <a asp-controller="Portal" asp-action="Appointments">Manage</a>
-        </div>
-        @foreach (var item in Model.UpcomingAppointments)
-        {
-            <div class="feed-item">
-                <p class="feed-meta">@item.AppointmentDate.ToString("MMMM dd, yyyy") &middot; @item.TimeSlot</p>
-                <h3>@item.ResidentName</h3>
-                <p>@item.ServiceName</p>
-                <span class="badge-soft">@item.Status</span>
-            </div>
-        }
-    </article>
-
-    <article class="panel-card panel-card-wide">
-        <div class="panel-header">
-            <h2>Latest Service Requests</h2>
-            <a asp-controller="Portal" asp-action="Requests">Open request desk</a>
-        </div>
-        <div class="table-shell">
-            <table class="table civic-table">
-                <thead>
-                    <tr>
-                        <th>Resident</th>
-                        <th>Service</th>
-                        <th>Priority</th>
-                        <th>Status</th>
-                        <th>Submitted</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var item in Model.LatestRequests)
-                {
-                    <tr>
-                        <td>@item.ResidentName</td>
-                        <td>@item.ServiceName</td>
-                        <td><span class="priority-badge priority-badge--@item.Priority.ToLowerInvariant()">@item.Priority</span></td>
-                        <td>@item.Status</td>
-                        <td>@item.SubmittedOn.ToString("MMM dd, yyyy")</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </article>
-</section>
-
-<section class="content-grid content-grid--asymmetric">
-    <article class="panel-card">
-        <div class="panel-header">
-            <h2>Office Guide</h2>
-            <span class="badge-soft">Helpful feature</span>
+            <h2>@(Model.IsAdmin ? "Admin Quick Guide" : "Resident Quick Guide")</h2>
+            <span class="badge-soft">Access rules</span>
         </div>
         <div class="timeline-list">
-            <div><strong>Step 1:</strong> Browse a service and confirm document requirements.</div>
-            <div><strong>Step 2:</strong> Register or verify the resident record in the portal.</div>
-            <div><strong>Step 3:</strong> Book an appointment or submit a request for follow-up.</div>
+            @if (Model.IsAdmin)
+            {
+                <div><strong>Step 1:</strong> Monitor public announcements for all users.</div>
+                <div><strong>Step 2:</strong> Review resident records, all appointments, and all service requests.</div>
+                <div><strong>Step 3:</strong> Add or update available services from the service catalog page.</div>
+            }
+            else
+            {
+                <div><strong>Step 1:</strong> Check announcements and available services.</div>
+                <div><strong>Step 2:</strong> Review only your own appointments and request log.</div>
+                <div><strong>Step 3:</strong> Register your resident profile if your account is not yet linked.</div>
+            }
         </div>
     </article>
-    <article class="panel-card">
-        <div class="panel-header">
-            <h2>Emergency and Support</h2>
-            <span class="badge-soft">Always visible</span>
-        </div>
-        <div class="contact-grid">
-            <div class="contact-chip">
-                <span>Barangay Hall</span>
-                <strong>(02) 8123-4567</strong>
+
+    @if (Model.IsAdmin)
+    {
+        <article class="panel-card">
+            <div class="panel-header">
+                <h2>Upcoming Appointments</h2>
+                <a asp-controller="Portal" asp-action="Appointments">Manage</a>
             </div>
-            <div class="contact-chip">
-                <span>Health Desk</span>
-                <strong>(02) 8456-1098</strong>
+            @foreach (var item in Model.UpcomingAppointments)
+            {
+                <div class="feed-item">
+                    <p class="feed-meta">@item.AppointmentDate.ToString("MMMM dd, yyyy") &middot; @item.TimeSlot</p>
+                    <h3>@item.ResidentName</h3>
+                    <p>@item.ServiceName</p>
+                    <span class="badge-soft">@item.Status</span>
+                </div>
+            }
+        </article>
+
+        <article class="panel-card panel-card-wide">
+            <div class="panel-header">
+                <h2>Latest Service Requests</h2>
+                <a asp-controller="Portal" asp-action="Requests">Open request desk</a>
             </div>
-            <div class="contact-chip">
-                <span>Community Hotline</span>
-                <strong>0917-555-0188</strong>
+            <div class="table-shell">
+                <table class="table civic-table">
+                    <thead>
+                        <tr>
+                            <th>Resident</th>
+                            <th>Service</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.LatestRequests)
+                    {
+                        <tr>
+                            <td>@item.ResidentName</td>
+                            <td>@item.ServiceName</td>
+                            <td><span class="priority-badge priority-badge--@item.Priority.ToLowerInvariant()">@item.Priority</span></td>
+                            <td>@item.Status</td>
+                            <td>@item.SubmittedOn.ToString("MMM dd, yyyy")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
             </div>
-        </div>
-    </article>
+        </article>
+    }
 </section>

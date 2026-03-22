@@ -2,6 +2,8 @@ namespace BarangayConnect.Models;
 
 public class DashboardViewModel
 {
+    public string DisplayName { get; set; } = string.Empty;
+    public bool IsAdmin { get; set; }
     public int ResidentCount { get; set; }
     public int AppointmentCount { get; set; }
     public int PendingRequestCount { get; set; }

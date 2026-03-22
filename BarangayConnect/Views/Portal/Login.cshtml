@@ -1,0 +1,59 @@
+@model BarangayConnect.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<section class="login-shell">
+    <article class="login-card">
+        <div>
+            <p class="eyebrow">Secure Access</p>
+            <h1>Sign in to Banay-Banay Comms Network</h1>
+            <p class="hero-copy">Use the built-in demo accounts below to access either the admin dashboard or a resident's personal portal.</p>
+        </div>
+
+        <form asp-action="Login" method="post" class="data-form">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger">@Model.ErrorMessage</div>
+            }
+
+            <div class="field-grid">
+                <div class="full-span">
+                    <label asp-for="Username"></label>
+                    <input asp-for="Username" class="form-control" />
+                </div>
+                <div class="full-span">
+                    <label asp-for="Password"></label>
+                    <input asp-for="Password" class="form-control" />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-civic">Sign In</button>
+        </form>
+
+        <p class="login-switch">
+            New resident account?
+            <a asp-action="Register">Create one here</a>
+        </p>
+    </article>
+
+    <article class="panel-card">
+        <div class="panel-header">
+            <h2>Demo Accounts</h2>
+            <span class="badge-soft">For testing</span>
+        </div>
+        <div class="info-list">
+            <div><strong>Admin</strong><br />Username: <code>admin</code><br />Password: <code>admin123</code></div>
+            <div><strong>Ana Dela Cruz</strong><br />Username: <code>ana.delacruz</code><br />Password: <code>user123</code></div>
+            <div><strong>Miguel Santos</strong><br />Username: <code>miguel.santos</code><br />Password: <code>user123</code></div>
+            <div><strong>Leah Ramos</strong><br />Username: <code>leah.ramos</code><br />Password: <code>user123</code></div>
+        </div>
+    </article>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

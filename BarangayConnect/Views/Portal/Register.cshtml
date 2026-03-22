@@ -1,0 +1,71 @@
+@model BarangayConnect.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Create Account";
+}
+
+<section class="login-shell">
+    <article class="login-card">
+        <div>
+            <p class="eyebrow">Resident Sign Up</p>
+            <h1>Create a personal account for Banay-Banay Comms Network</h1>
+            <p class="hero-copy">After sign-up, you can log requests, book appointments, and complete your resident profile inside your own account.</p>
+        </div>
+
+        <form asp-action="Register" method="post" class="data-form">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger">@Model.ErrorMessage</div>
+            }
+
+            <div class="field-grid">
+                <div class="full-span">
+                    <label asp-for="DisplayName"></label>
+                    <input asp-for="DisplayName" class="form-control" />
+                    <span asp-validation-for="DisplayName" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="Username"></label>
+                    <input asp-for="Username" class="form-control" />
+                    <span asp-validation-for="Username" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="Password"></label>
+                    <input asp-for="Password" class="form-control" />
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+                <div class="full-span">
+                    <label asp-for="ConfirmPassword"></label>
+                    <input asp-for="ConfirmPassword" class="form-control" />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-civic">Create Account</button>
+        </form>
+
+        <p class="login-switch">
+            Already have an account?
+            <a asp-action="Login">Sign in here</a>
+        </p>
+    </article>
+
+    <article class="panel-card">
+        <div class="panel-header">
+            <h2>What happens next</h2>
+            <span class="badge-soft">Resident flow</span>
+        </div>
+        <div class="info-list">
+            <div><strong>Step 1:</strong> Create your username and password.</div>
+            <div><strong>Step 2:</strong> Sign in automatically after registration.</div>
+            <div><strong>Step 3:</strong> Complete your resident profile on the Residents page.</div>
+            <div><strong>Step 4:</strong> Use your account to manage only your own appointments and requests.</div>
+        </div>
+    </article>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

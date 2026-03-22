@@ -4,6 +4,8 @@ namespace BarangayConnect.Models;
 
 public class RequestsPageViewModel
 {
+    public bool IsAdmin { get; set; }
+    public Resident? CurrentResident { get; set; }
     public List<Resident> Residents { get; set; } = [];
     public List<Service> Services { get; set; } = [];
     public List<ServiceRequest> Requests { get; set; } = [];

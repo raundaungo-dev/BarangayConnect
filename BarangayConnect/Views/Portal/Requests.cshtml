@@ -6,12 +6,20 @@
 <section class="page-heading page-heading--split">
     <div>
         <p class="eyebrow">Request Desk</p>
-        <h1>Track resident concerns and follow-up requests with clearer prioritization</h1>
-        <p>This workflow stores resident-service links together with priority and status so follow-up is easier for staff and residents.</p>
+        @if (Model.IsAdmin)
+        {
+            <h1>Track resident concerns and follow-up requests with clearer prioritization</h1>
+            <p>This workflow stores resident-service links together with priority and status so follow-up is easier for staff and residents.</p>
+        }
+        else
+        {
+            <h1>Submit and monitor your own barangay service requests</h1>
+            <p>Your resident account can only create and review request logs that belong to you, keeping request history private and focused.</p>
+        }
     </div>
     <div class="page-heading__card">
         <strong>@Model.Requests.Count</strong>
-        <span>requests in the current log</span>
+        <span>@(Model.IsAdmin ? "requests in the current log" : "requests in your personal log")</span>
     </div>
 </section>
 
@@ -24,19 +32,30 @@
     <article class="panel-card">
         <div class="panel-header">
             <h2>Submit Request</h2>
-            <span class="badge-soft">Case intake</span>
+            <span class="badge-soft">@(Model.IsAdmin ? "Case intake" : "My request intake")</span>
         </div>
         <form asp-action="Requests" method="post" class="data-form">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="field-grid">
-                <div>
-                    <label asp-for="NewRequest.ResidentId"></label>
-                    <select asp-for="NewRequest.ResidentId" asp-items="Model.ResidentOptions" class="form-select">
-                        <option value="">Select resident</option>
-                    </select>
-                    <span asp-validation-for="NewRequest.ResidentId" class="text-danger"></span>
-                </div>
+                @if (Model.IsAdmin)
+                {
+                    <div>
+                        <label asp-for="NewRequest.ResidentId"></label>
+                        <select asp-for="NewRequest.ResidentId" asp-items="Model.ResidentOptions" class="form-select">
+                            <option value="">Select resident</option>
+                        </select>
+                        <span asp-validation-for="NewRequest.ResidentId" class="text-danger"></span>
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        <label>Resident</label>
+                        <div class="info-field">@(Model.CurrentResident?.FullName ?? "Please complete your resident profile first.")</div>
+                        <input asp-for="NewRequest.ResidentId" type="hidden" />
+                    </div>
+                }
                 <div>
                     <label asp-for="NewRequest.ServiceId"></label>
                     <select asp-for="NewRequest.ServiceId" asp-items="Model.ServiceOptions" class="form-select">
@@ -65,29 +84,41 @@
 
     <article class="panel-card">
         <div class="panel-header">
-            <h2>Priority Guide</h2>
+            <h2>@(Model.IsAdmin ? "Priority Guide" : "Request Guidance")</h2>
             <span class="badge-soft">Helpful feature</span>
         </div>
         <div class="info-list">
-            <div><strong>Normal:</strong> Standard service follow-up without a strict deadline.</div>
-            <div><strong>High:</strong> Important request that should be reviewed earlier than the regular queue.</div>
-            <div><strong>Urgent:</strong> Time-sensitive concern that affects an immediate school, work, or legal requirement.</div>
+            @if (Model.IsAdmin)
+            {
+                <div><strong>Normal:</strong> Standard service follow-up without a strict deadline.</div>
+                <div><strong>High:</strong> Important request that should be reviewed earlier than the regular queue.</div>
+                <div><strong>Urgent:</strong> Time-sensitive concern that affects an immediate school, work, or legal requirement.</div>
+            }
+            else
+            {
+                <div><strong>Normal:</strong> Routine follow-up such as document status checks or standard barangay inquiries.</div>
+                <div><strong>High:</strong> Important concern that should be reviewed earlier than a routine request.</div>
+                <div><strong>Urgent:</strong> Time-sensitive concerns tied to work, school, health, or legal deadlines.</div>
+            }
         </div>
     </article>
 
     <article class="panel-card panel-card-wide">
         <div class="panel-header">
-            <h2>Request Log</h2>
+            <h2>@(Model.IsAdmin ? "Request Log" : "My Request Log")</h2>
             <span class="badge-soft">@Model.Requests.Count listed</span>
         </div>
         <div class="filter-control filter-control--inline">
-            <input type="search" class="form-control" placeholder="Search by resident, service, priority, or status..." data-filter-input="#request-table" />
+            <input type="search" class="form-control" placeholder="@(Model.IsAdmin ? "Search by resident, service, priority, or status..." : "Search by service, priority, or status...")" data-filter-input="#request-table" />
         </div>
         <div class="table-shell">
             <table id="request-table" class="table civic-table">
                 <thead>
                     <tr>
-                        <th>Resident</th>
+                        @if (Model.IsAdmin)
+                        {
+                            <th>Resident</th>
+                        }
                         <th>Service</th>
                         <th>Priority</th>
                         <th>Status</th>
@@ -98,7 +129,10 @@
                 @foreach (var request in Model.Requests)
                 {
                     <tr data-filter-item data-filter-text="@($"{request.ResidentName} {request.ServiceName} {request.Priority} {request.Status} {request.SubmittedOn:MMM dd yyyy}")">
-                        <td>@request.ResidentName</td>
+                        @if (Model.IsAdmin)
+                        {
+                            <td>@request.ResidentName</td>
+                        }
                         <td>@request.ServiceName</td>
                         <td><span class="priority-badge priority-badge--@request.Priority.ToLowerInvariant()">@request.Priority</span></td>
                         <td><span class="status-badge">@request.Status</span></td>

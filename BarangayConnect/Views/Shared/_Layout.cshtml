@@ -1,3 +1,4 @@
+@using Microsoft.AspNetCore.Http
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +14,10 @@
     <link rel="stylesheet" href="~/BarangayConnect.styles.css" asp-append-version="true" />
 </head>
 <body>
+    @{
+        var isLoggedIn = Context.Session.GetInt32("AccountId").HasValue;
+        var isAdmin = string.Equals(Context.Session.GetString("AccountRole"), "Admin", StringComparison.OrdinalIgnoreCase);
+    }
     <div class="utility-strip">
         <div class="container utility-strip__inner">
             <div class="utility-pill">Official barangay communications network</div>
@@ -38,15 +43,29 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="mainNav">
-                    <ul class="navbar-nav ms-auto align-items-lg-center">
-                        <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Index">Dashboard</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Announcements">Announcements</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Residents">Residents</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Services">Services</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Appointments">Appointments</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Requests">Requests</a></li>
-                        <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Documentation">Documentation</a></li>
-                    </ul>
+                    @if (isLoggedIn)
+                    {
+                        <ul class="navbar-nav ms-auto align-items-lg-center">
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Index">Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Announcements">Announcements</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Residents">Residents</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Services">Services</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Appointments">Appointments</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Requests">Requests</a></li>
+                            @if (isAdmin)
+                            {
+                                <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Documentation">Documentation</a></li>
+                            }
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Logout">Logout</a></li>
+                        </ul>
+                    }
+                    else
+                    {
+                        <ul class="navbar-nav ms-auto align-items-lg-center">
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Login">Login</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Register">Sign Up</a></li>
+                        </ul>
+                    }
                 </div>
             </nav>
         </div>

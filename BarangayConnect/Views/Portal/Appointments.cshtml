@@ -6,12 +6,20 @@
 <section class="page-heading page-heading--split">
     <div>
         <p class="eyebrow">Appointment Desk</p>
-        <h1>Schedule resident visits with clearer guidance and faster processing</h1>
-        <p>Appointments connect resident and service records through SQLite-backed relationships to keep visits organized and easy to trace.</p>
+        @if (Model.IsAdmin)
+        {
+            <h1>Schedule resident visits with clearer guidance and faster processing</h1>
+            <p>Appointments connect resident and service records through SQLite-backed relationships to keep visits organized and easy to trace.</p>
+        }
+        else
+        {
+            <h1>Manage your own barangay appointments in one secure page</h1>
+            <p>Your account can create and review only your own appointment records so resident schedules stay private and easy to track.</p>
+        }
     </div>
     <div class="page-heading__card">
         <strong>@Model.Appointments.Count</strong>
-        <span>appointments in the current list</span>
+        <span>@(Model.IsAdmin ? "appointments in the current list" : "appointments in your personal log")</span>
     </div>
 </section>
 
@@ -24,19 +32,30 @@
     <article class="panel-card">
         <div class="panel-header">
             <h2>Book Appointment</h2>
-            <span class="badge-soft">Resident service flow</span>
+            <span class="badge-soft">@(Model.IsAdmin ? "Resident service flow" : "My appointment request")</span>
         </div>
         <form asp-action="Appointments" method="post" class="data-form">
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="field-grid">
-                <div>
-                    <label asp-for="NewAppointment.ResidentId"></label>
-                    <select asp-for="NewAppointment.ResidentId" asp-items="Model.ResidentOptions" class="form-select">
-                        <option value="">Select resident</option>
-                    </select>
-                    <span asp-validation-for="NewAppointment.ResidentId" class="text-danger"></span>
-                </div>
+                @if (Model.IsAdmin)
+                {
+                    <div>
+                        <label asp-for="NewAppointment.ResidentId"></label>
+                        <select asp-for="NewAppointment.ResidentId" asp-items="Model.ResidentOptions" class="form-select">
+                            <option value="">Select resident</option>
+                        </select>
+                        <span asp-validation-for="NewAppointment.ResidentId" class="text-danger"></span>
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        <label>Resident</label>
+                        <div class="info-field">@(Model.CurrentResident?.FullName ?? "Please complete your resident profile first.")</div>
+                        <input asp-for="NewAppointment.ResidentId" type="hidden" />
+                    </div>
+                }
                 <div>
                     <label asp-for="NewAppointment.ServiceId"></label>
                     <select asp-for="NewAppointment.ServiceId" asp-items="Model.ServiceOptions" class="form-select">
@@ -73,30 +92,42 @@
 
     <article class="panel-card">
         <div class="panel-header">
-            <h2>Visit Preparation</h2>
+            <h2>@(Model.IsAdmin ? "Visit Preparation" : "Before Your Visit")</h2>
             <span class="badge-soft">Helpful feature</span>
         </div>
         <div class="info-list">
-            <div><strong>Before the visit:</strong> Confirm the resident record and service requirements first.</div>
-            <div><strong>Best practice:</strong> Keep notes short but specific so the front desk can prepare documents early.</div>
-            <div><strong>Suggested slots:</strong> Morning schedules are best for clearances and records requests.</div>
+            @if (Model.IsAdmin)
+            {
+                <div><strong>Before the visit:</strong> Confirm the resident record and service requirements first.</div>
+                <div><strong>Best practice:</strong> Keep notes short but specific so the front desk can prepare documents early.</div>
+                <div><strong>Suggested slots:</strong> Morning schedules are best for clearances and records requests.</div>
+            }
+            else
+            {
+                <div><strong>Your privacy:</strong> This page only shows appointment records linked to your own resident account.</div>
+                <div><strong>Best practice:</strong> Add a short note so the barangay desk can prepare the right forms before your visit.</div>
+                <div><strong>Suggested slots:</strong> Morning schedules are ideal for clearances, certifications, and record requests.</div>
+            }
         </div>
     </article>
 
     <article class="panel-card panel-card-wide">
         <div class="panel-header">
-            <h2>Scheduled Appointments</h2>
+            <h2>@(Model.IsAdmin ? "Scheduled Appointments" : "My Appointments")</h2>
             <span class="badge-soft">@Model.Appointments.Count listed</span>
         </div>
         <div class="filter-control filter-control--inline">
-            <input type="search" class="form-control" placeholder="Search by resident, service, slot, or status..." data-filter-input="#appointment-table" />
+            <input type="search" class="form-control" placeholder="@(Model.IsAdmin ? "Search by resident, service, slot, or status..." : "Search by service, slot, or status...")" data-filter-input="#appointment-table" />
         </div>
         <div class="table-shell">
             <table id="appointment-table" class="table civic-table">
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Resident</th>
+                        @if (Model.IsAdmin)
+                        {
+                            <th>Resident</th>
+                        }
                         <th>Service</th>
                         <th>Slot</th>
                         <th>Status</th>
@@ -107,7 +138,10 @@
                 {
                     <tr data-filter-item data-filter-text="@($"{appointment.AppointmentDate:MMM dd yyyy} {appointment.ResidentName} {appointment.ServiceName} {appointment.TimeSlot} {appointment.Status}")">
                         <td>@appointment.AppointmentDate.ToString("MMM dd, yyyy")</td>
-                        <td>@appointment.ResidentName</td>
+                        @if (Model.IsAdmin)
+                        {
+                            <td>@appointment.ResidentName</td>
+                        }
                         <td>@appointment.ServiceName</td>
                         <td>@appointment.TimeSlot</td>
                         <td><span class="status-badge">@appointment.Status</span></td>

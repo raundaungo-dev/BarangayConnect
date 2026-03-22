@@ -6,12 +6,12 @@
 <section class="page-heading page-heading--split">
     <div>
         <p class="eyebrow">Resident Registry</p>
-        <h1>Maintain a clean, searchable, and service-ready resident database</h1>
-        <p>The resident registry supports appointments and requests through shared database relationships across the system.</p>
+        <h1>@(Model.IsAdmin ? "Manage resident records and linked account information" : "View or complete your resident profile")</h1>
+        <p>@(Model.IsAdmin ? "Registered residents are visible only to admin accounts." : "Resident users can only view their own profile information and self-register if not yet linked.")</p>
     </div>
     <div class="page-heading__card">
-        <strong>@Model.Residents.Count</strong>
-        <span>resident records stored</span>
+        <strong>@(Model.IsAdmin ? Model.Residents.Count : Model.CurrentResident is null ? 0 : 1)</strong>
+        <span>@(Model.IsAdmin ? "resident records stored" : "personal record visible")</span>
     </div>
 </section>
 
@@ -20,92 +20,134 @@
     <div class="alert alert-success shadow-sm">@message</div>
 }
 
-<section class="form-layout">
-    <article class="panel-card">
-        <div class="panel-header">
+@if (Model.IsAdmin)
+{
+    <section class="form-layout">
+        <article class="panel-card">
             <h2>Add Resident</h2>
-            <span class="badge-soft">Data entry</span>
-        </div>
-        <form asp-action="Residents" method="post" class="data-form">
-            @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="field-grid">
-                <div>
-                    <label asp-for="NewResident.FullName"></label>
-                    <input asp-for="NewResident.FullName" class="form-control" placeholder="Juan Dela Cruz" />
-                    <span asp-validation-for="NewResident.FullName" class="text-danger"></span>
+            <form asp-action="Residents" method="post" class="data-form">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="field-grid">
+                    <div>
+                        <label asp-for="NewResident.FullName"></label>
+                        <input asp-for="NewResident.FullName" class="form-control" />
+                        <span asp-validation-for="NewResident.FullName" class="text-danger"></span>
+                    </div>
+                    <div>
+                        <label asp-for="NewResident.HouseholdNo"></label>
+                        <input asp-for="NewResident.HouseholdNo" class="form-control" />
+                        <span asp-validation-for="NewResident.HouseholdNo" class="text-danger"></span>
+                    </div>
+                    <div>
+                        <label asp-for="NewResident.ContactNumber"></label>
+                        <input asp-for="NewResident.ContactNumber" class="form-control" />
+                        <span asp-validation-for="NewResident.ContactNumber" class="text-danger"></span>
+                    </div>
+                    <div>
+                        <label asp-for="NewResident.EmailAddress"></label>
+                        <input asp-for="NewResident.EmailAddress" class="form-control" />
+                        <span asp-validation-for="NewResident.EmailAddress" class="text-danger"></span>
+                    </div>
+                    <div class="full-span">
+                        <label asp-for="NewResident.Purok"></label>
+                        <input asp-for="NewResident.Purok" class="form-control" />
+                        <span asp-validation-for="NewResident.Purok" class="text-danger"></span>
+                    </div>
                 </div>
-                <div>
-                    <label asp-for="NewResident.HouseholdNo"></label>
-                    <input asp-for="NewResident.HouseholdNo" class="form-control" placeholder="HH-031" />
-                    <span asp-validation-for="NewResident.HouseholdNo" class="text-danger"></span>
-                </div>
-                <div>
-                    <label asp-for="NewResident.ContactNumber"></label>
-                    <input asp-for="NewResident.ContactNumber" class="form-control" placeholder="09171234567" />
-                    <span asp-validation-for="NewResident.ContactNumber" class="text-danger"></span>
-                </div>
-                <div>
-                    <label asp-for="NewResident.EmailAddress"></label>
-                    <input asp-for="NewResident.EmailAddress" class="form-control" placeholder="resident@email.com" />
-                    <span asp-validation-for="NewResident.EmailAddress" class="text-danger"></span>
-                </div>
-                <div class="full-span">
-                    <label asp-for="NewResident.Purok"></label>
-                    <input asp-for="NewResident.Purok" class="form-control" placeholder="Purok 4" />
-                    <span asp-validation-for="NewResident.Purok" class="text-danger"></span>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-civic">Save Resident</button>
-        </form>
-    </article>
+                <button type="submit" class="btn btn-civic">Save Resident</button>
+            </form>
+        </article>
 
-    <article class="panel-card">
+        <article class="panel-card panel-card-wide">
+            <div class="panel-header">
+                <h2>Registered Residents</h2>
+                <span class="badge-soft">@Model.Residents.Count total</span>
+            </div>
+            <div class="table-shell">
+                <table class="table civic-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Household</th>
+                            <th>Contact</th>
+                            <th>Email</th>
+                            <th>Purok</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var resident in Model.Residents)
+                    {
+                        <tr>
+                            <td>@resident.FullName</td>
+                            <td>@resident.HouseholdNo</td>
+                            <td>@resident.ContactNumber</td>
+                            <td>@resident.EmailAddress</td>
+                            <td>@resident.Purok</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </article>
+    </section>
+}
+else if (Model.CurrentResident is null)
+{
+    <section class="form-layout">
+        <article class="panel-card">
+            <h2>Register Your Resident Profile</h2>
+            <form asp-action="Residents" method="post" class="data-form">
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="field-grid">
+                    <div>
+                        <label asp-for="NewResident.FullName"></label>
+                        <input asp-for="NewResident.FullName" class="form-control" />
+                        <span asp-validation-for="NewResident.FullName" class="text-danger"></span>
+                    </div>
+                    <div>
+                        <label asp-for="NewResident.HouseholdNo"></label>
+                        <input asp-for="NewResident.HouseholdNo" class="form-control" />
+                        <span asp-validation-for="NewResident.HouseholdNo" class="text-danger"></span>
+                    </div>
+                    <div>
+                        <label asp-for="NewResident.ContactNumber"></label>
+                        <input asp-for="NewResident.ContactNumber" class="form-control" />
+                        <span asp-validation-for="NewResident.ContactNumber" class="text-danger"></span>
+                    </div>
+                    <div>
+                        <label asp-for="NewResident.EmailAddress"></label>
+                        <input asp-for="NewResident.EmailAddress" class="form-control" />
+                        <span asp-validation-for="NewResident.EmailAddress" class="text-danger"></span>
+                    </div>
+                    <div class="full-span">
+                        <label asp-for="NewResident.Purok"></label>
+                        <input asp-for="NewResident.Purok" class="form-control" />
+                        <span asp-validation-for="NewResident.Purok" class="text-danger"></span>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-civic">Submit My Profile</button>
+            </form>
+        </article>
+    </section>
+}
+else
+{
+    <section class="panel-card">
         <div class="panel-header">
-            <h2>Registry Tools</h2>
-            <span class="badge-soft">Helpful feature</span>
+            <h2>My Resident Profile</h2>
+            <span class="badge-soft">Visible only to you</span>
         </div>
         <div class="info-list">
-            <div><strong>Search instantly:</strong> Use the resident filter below to find names, household numbers, contacts, or purok assignments.</div>
-            <div><strong>Keep records clean:</strong> Register residents first before booking appointments or creating requests.</div>
-            <div><strong>Community grouping:</strong> Purok values help segment records for notices, visits, and reporting.</div>
+            <div><strong>Name:</strong> @Model.CurrentResident.FullName</div>
+            <div><strong>Household No.:</strong> @Model.CurrentResident.HouseholdNo</div>
+            <div><strong>Contact:</strong> @Model.CurrentResident.ContactNumber</div>
+            <div><strong>Email:</strong> @Model.CurrentResident.EmailAddress</div>
+            <div><strong>Purok:</strong> @Model.CurrentResident.Purok</div>
         </div>
-    </article>
-    <article class="panel-card panel-card-wide">
-        <div class="panel-header">
-            <h2>Registered Residents</h2>
-            <span class="badge-soft">@Model.Residents.Count total</span>
-        </div>
-        <div class="filter-control filter-control--inline">
-            <input type="search" class="form-control" placeholder="Search resident, household, contact, email, or purok..." data-filter-input="#resident-table" />
-        </div>
-        <div class="table-shell">
-            <table id="resident-table" class="table civic-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Household</th>
-                        <th>Contact</th>
-                        <th>Email</th>
-                        <th>Purok</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var resident in Model.Residents)
-                {
-                    <tr data-filter-item data-filter-text="@($"{resident.FullName} {resident.HouseholdNo} {resident.ContactNumber} {resident.EmailAddress} {resident.Purok}")">
-                        <td>@resident.FullName</td>
-                        <td>@resident.HouseholdNo</td>
-                        <td>@resident.ContactNumber</td>
-                        <td>@resident.EmailAddress</td>
-                        <td>@resident.Purok</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </article>
-</section>
+    </section>
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

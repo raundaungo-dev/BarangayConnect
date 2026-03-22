@@ -30,6 +30,16 @@ public class PortalRepository
                 RegisteredOn TEXT NOT NULL
             );
 
+            CREATE TABLE IF NOT EXISTS Accounts (
+                AccountId INTEGER PRIMARY KEY AUTOINCREMENT,
+                Username TEXT NOT NULL UNIQUE,
+                Password TEXT NOT NULL,
+                DisplayName TEXT NOT NULL,
+                Role TEXT NOT NULL,
+                ResidentId INTEGER NULL,
+                FOREIGN KEY (ResidentId) REFERENCES Residents(ResidentId)
+            );
+
             CREATE TABLE IF NOT EXISTS Services (
                 ServiceId INTEGER PRIMARY KEY AUTOINCREMENT,
                 Name TEXT NOT NULL,
@@ -79,21 +89,89 @@ public class PortalRepository
             await command.ExecuteNonQueryAsync();
         }
 
-        await SeedIfEmptyAsync(connection);
+        await SeedReferenceDataAsync(connection);
+        await SeedAccountsAsync(connection);
     }
 
-    public async Task<DashboardViewModel> GetDashboardAsync()
+    public async Task<int> GetResidentCountAsync()
     {
-        return new DashboardViewModel
+        return await ExecuteScalarIntAsync("SELECT COUNT(*) FROM Residents;");
+    }
+
+    public async Task<int> GetAppointmentCountAsync()
+    {
+        return await ExecuteScalarIntAsync("SELECT COUNT(*) FROM Appointments;");
+    }
+
+    public async Task<int> GetPendingRequestCountAsync()
+    {
+        return await ExecuteScalarIntAsync("SELECT COUNT(*) FROM ServiceRequests WHERE Status <> 'Completed';");
+    }
+
+    public async Task<int> GetAnnouncementCountAsync()
+    {
+        return await ExecuteScalarIntAsync("SELECT COUNT(*) FROM Announcements;");
+    }
+
+    public async Task<Account?> GetAccountByCredentialsAsync(string username, string password)
+    {
+        const string sql = """
+            SELECT AccountId, Username, Password, DisplayName, Role, ResidentId
+            FROM Accounts
+            WHERE lower(Username) = lower(@Username) AND Password = @Password
+            LIMIT 1;
+            """;
+
+        return await ExecuteSingleAsync(sql, command =>
         {
-            ResidentCount = await ExecuteScalarIntAsync("SELECT COUNT(*) FROM Residents;"),
-            AppointmentCount = await ExecuteScalarIntAsync("SELECT COUNT(*) FROM Appointments;"),
-            PendingRequestCount = await ExecuteScalarIntAsync("SELECT COUNT(*) FROM ServiceRequests WHERE Status <> 'Completed';"),
-            ActiveAnnouncementCount = await ExecuteScalarIntAsync("SELECT COUNT(*) FROM Announcements;"),
-            RecentAnnouncements = await GetAnnouncementsAsync(),
-            UpcomingAppointments = await GetAppointmentsAsync(),
-            LatestRequests = await GetServiceRequestsAsync()
-        };
+            command.Parameters.AddWithValue("@Username", username);
+            command.Parameters.AddWithValue("@Password", password);
+        }, MapAccount);
+    }
+
+    public async Task<Account?> GetAccountByIdAsync(int accountId)
+    {
+        const string sql = """
+            SELECT AccountId, Username, Password, DisplayName, Role, ResidentId
+            FROM Accounts
+            WHERE AccountId = @AccountId
+            LIMIT 1;
+            """;
+
+        return await ExecuteSingleAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@AccountId", accountId);
+        }, MapAccount);
+    }
+
+    public async Task<bool> UsernameExistsAsync(string username)
+    {
+        const string sql = """
+            SELECT COUNT(*)
+            FROM Accounts
+            WHERE lower(Username) = lower(@Username);
+            """;
+
+        return await ExecuteScalarIntAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@Username", username.Trim());
+        }) > 0;
+    }
+
+    public async Task<int> AddAccountAsync(RegisterViewModel model)
+    {
+        const string sql = """
+            INSERT INTO Accounts (Username, Password, DisplayName, Role, ResidentId)
+            VALUES (@Username, @Password, @DisplayName, 'User', NULL);
+            SELECT last_insert_rowid();
+            """;
+
+        return await ExecuteScalarIntAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@Username", model.Username.Trim());
+            command.Parameters.AddWithValue("@Password", model.Password);
+            command.Parameters.AddWithValue("@DisplayName", model.DisplayName.Trim());
+        });
     }
 
     public async Task<List<Announcement>> GetAnnouncementsAsync()
@@ -105,7 +183,7 @@ public class PortalRepository
             LIMIT 6;
             """;
 
-        return await ExecuteReaderAsync(sql, reader => new Announcement
+        return await ExecuteReaderAsync(sql, null, reader => new Announcement
         {
             Id = reader.GetInt32(0),
             Title = reader.GetString(1),
@@ -124,26 +202,33 @@ public class PortalRepository
             ORDER BY FullName;
             """;
 
-        return await ExecuteReaderAsync(sql, reader => new Resident
-        {
-            Id = reader.GetInt32(0),
-            FullName = reader.GetString(1),
-            HouseholdNo = reader.GetString(2),
-            ContactNumber = reader.GetString(3),
-            EmailAddress = reader.GetString(4),
-            Purok = reader.GetString(5),
-            RegisteredOn = DateTime.Parse(reader.GetString(6))
-        });
+        return await ExecuteReaderAsync(sql, null, MapResident);
     }
 
-    public async Task AddResidentAsync(ResidentInputModel model)
+    public async Task<Resident?> GetResidentByIdAsync(int residentId)
+    {
+        const string sql = """
+            SELECT ResidentId, FullName, HouseholdNo, ContactNumber, EmailAddress, Purok, RegisteredOn
+            FROM Residents
+            WHERE ResidentId = @ResidentId
+            LIMIT 1;
+            """;
+
+        return await ExecuteSingleAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@ResidentId", residentId);
+        }, MapResident);
+    }
+
+    public async Task<int> AddResidentAsync(ResidentInputModel model)
     {
         const string sql = """
             INSERT INTO Residents (FullName, HouseholdNo, ContactNumber, EmailAddress, Purok, RegisteredOn)
             VALUES (@FullName, @HouseholdNo, @ContactNumber, @EmailAddress, @Purok, @RegisteredOn);
+            SELECT last_insert_rowid();
             """;
 
-        await ExecuteNonQueryAsync(sql, command =>
+        return await ExecuteScalarIntAsync(sql, command =>
         {
             command.Parameters.AddWithValue("@FullName", model.FullName);
             command.Parameters.AddWithValue("@HouseholdNo", model.HouseholdNo);
@@ -151,6 +236,21 @@ public class PortalRepository
             command.Parameters.AddWithValue("@EmailAddress", model.EmailAddress);
             command.Parameters.AddWithValue("@Purok", model.Purok);
             command.Parameters.AddWithValue("@RegisteredOn", DateTime.Today.ToString("yyyy-MM-dd"));
+        });
+    }
+
+    public async Task AssignResidentToAccountAsync(int accountId, int residentId)
+    {
+        const string sql = """
+            UPDATE Accounts
+            SET ResidentId = @ResidentId
+            WHERE AccountId = @AccountId;
+            """;
+
+        await ExecuteNonQueryAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@ResidentId", residentId);
+            command.Parameters.AddWithValue("@AccountId", accountId);
         });
     }
 
@@ -162,7 +262,7 @@ public class PortalRepository
             ORDER BY Name;
             """;
 
-        return await ExecuteReaderAsync(sql, reader => new Service
+        return await ExecuteReaderAsync(sql, null, reader => new Service
         {
             Id = reader.GetInt32(0),
             Name = reader.GetString(1),
@@ -173,26 +273,59 @@ public class PortalRepository
         });
     }
 
-    public async Task<List<Appointment>> GetAppointmentsAsync()
+    public async Task AddServiceAsync(ServiceInputModel model)
     {
         const string sql = """
-            SELECT a.AppointmentId, r.FullName, s.Name, a.AppointmentDate, a.TimeSlot, a.Status, a.Notes
+            INSERT INTO Services (Name, Office, Description, Schedule, Requirements)
+            VALUES (@Name, @Office, @Description, @Schedule, @Requirements);
+            """;
+
+        await ExecuteNonQueryAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@Name", model.Name);
+            command.Parameters.AddWithValue("@Office", model.Office);
+            command.Parameters.AddWithValue("@Description", model.Description);
+            command.Parameters.AddWithValue("@Schedule", model.Schedule);
+            command.Parameters.AddWithValue("@Requirements", model.Requirements);
+        });
+    }
+
+    public async Task<List<Appointment>> GetAppointmentsAsync(int? residentId = null)
+    {
+        var sql = """
+            SELECT a.AppointmentId, a.ResidentId, r.FullName, s.Name, a.AppointmentDate, a.TimeSlot, a.Status, a.Notes
             FROM Appointments a
             INNER JOIN Residents r ON r.ResidentId = a.ResidentId
             INNER JOIN Services s ON s.ServiceId = a.ServiceId
+            """;
+
+        if (residentId.HasValue)
+        {
+            sql += "\nWHERE a.ResidentId = @ResidentId";
+        }
+
+        sql += """
+
             ORDER BY date(a.AppointmentDate), a.TimeSlot
             LIMIT 8;
             """;
 
-        return await ExecuteReaderAsync(sql, reader => new Appointment
+        return await ExecuteReaderAsync(sql, command =>
+        {
+            if (residentId.HasValue)
+            {
+                command.Parameters.AddWithValue("@ResidentId", residentId.Value);
+            }
+        }, reader => new Appointment
         {
             Id = reader.GetInt32(0),
-            ResidentName = reader.GetString(1),
-            ServiceName = reader.GetString(2),
-            AppointmentDate = DateTime.Parse(reader.GetString(3)),
-            TimeSlot = reader.GetString(4),
-            Status = reader.GetString(5),
-            Notes = reader.GetString(6)
+            ResidentId = reader.GetInt32(1),
+            ResidentName = reader.GetString(2),
+            ServiceName = reader.GetString(3),
+            AppointmentDate = DateTime.Parse(reader.GetString(4)),
+            TimeSlot = reader.GetString(5),
+            Status = reader.GetString(6),
+            Notes = reader.GetString(7)
         });
     }
 
@@ -213,26 +346,42 @@ public class PortalRepository
         });
     }
 
-    public async Task<List<ServiceRequest>> GetServiceRequestsAsync()
+    public async Task<List<ServiceRequest>> GetServiceRequestsAsync(int? residentId = null)
     {
-        const string sql = """
-            SELECT sr.RequestId, r.FullName, s.Name, sr.Description, sr.Priority, sr.Status, sr.SubmittedOn
+        var sql = """
+            SELECT sr.RequestId, sr.ResidentId, r.FullName, s.Name, sr.Description, sr.Priority, sr.Status, sr.SubmittedOn
             FROM ServiceRequests sr
             INNER JOIN Residents r ON r.ResidentId = sr.ResidentId
             INNER JOIN Services s ON s.ServiceId = sr.ServiceId
+            """;
+
+        if (residentId.HasValue)
+        {
+            sql += "\nWHERE sr.ResidentId = @ResidentId";
+        }
+
+        sql += """
+
             ORDER BY date(sr.SubmittedOn) DESC, sr.RequestId DESC
             LIMIT 8;
             """;
 
-        return await ExecuteReaderAsync(sql, reader => new ServiceRequest
+        return await ExecuteReaderAsync(sql, command =>
+        {
+            if (residentId.HasValue)
+            {
+                command.Parameters.AddWithValue("@ResidentId", residentId.Value);
+            }
+        }, reader => new ServiceRequest
         {
             Id = reader.GetInt32(0),
-            ResidentName = reader.GetString(1),
-            ServiceName = reader.GetString(2),
-            Description = reader.GetString(3),
-            Priority = reader.GetString(4),
-            Status = reader.GetString(5),
-            SubmittedOn = DateTime.Parse(reader.GetString(6))
+            ResidentId = reader.GetInt32(1),
+            ResidentName = reader.GetString(2),
+            ServiceName = reader.GetString(3),
+            Description = reader.GetString(4),
+            Priority = reader.GetString(5),
+            Status = reader.GetString(6),
+            SubmittedOn = DateTime.Parse(reader.GetString(7))
         });
     }
 
@@ -253,7 +402,7 @@ public class PortalRepository
         });
     }
 
-    private async Task SeedIfEmptyAsync(SqliteConnection connection)
+    private async Task SeedReferenceDataAsync(SqliteConnection connection)
     {
         var countCommand = connection.CreateCommand();
         countCommand.CommandText = "SELECT COUNT(*) FROM Services;";
@@ -297,12 +446,64 @@ public class PortalRepository
         await seedCommand.ExecuteNonQueryAsync();
     }
 
-    private async Task<int> ExecuteScalarIntAsync(string sql)
+    private async Task SeedAccountsAsync(SqliteConnection connection)
+    {
+        var countCommand = connection.CreateCommand();
+        countCommand.CommandText = "SELECT COUNT(*) FROM Accounts;";
+        var existingAccounts = Convert.ToInt32(await countCommand.ExecuteScalarAsync());
+
+        if (existingAccounts > 0)
+        {
+            return;
+        }
+
+        const string seedSql = """
+            INSERT INTO Accounts (Username, Password, DisplayName, Role, ResidentId) VALUES
+            ('admin', 'admin123', 'Barangay Administrator', 'Admin', NULL),
+            ('ana.delacruz', 'user123', 'Ana Dela Cruz', 'User', (SELECT ResidentId FROM Residents WHERE FullName = 'Ana Dela Cruz' LIMIT 1)),
+            ('miguel.santos', 'user123', 'Miguel Santos', 'User', (SELECT ResidentId FROM Residents WHERE FullName = 'Miguel Santos' LIMIT 1)),
+            ('leah.ramos', 'user123', 'Leah Ramos', 'User', (SELECT ResidentId FROM Residents WHERE FullName = 'Leah Ramos' LIMIT 1));
+            """;
+
+        await using var seedCommand = connection.CreateCommand();
+        seedCommand.CommandText = seedSql;
+        await seedCommand.ExecuteNonQueryAsync();
+    }
+
+    private static Account MapAccount(SqliteDataReader reader)
+    {
+        return new Account
+        {
+            Id = reader.GetInt32(0),
+            Username = reader.GetString(1),
+            Password = reader.GetString(2),
+            DisplayName = reader.GetString(3),
+            Role = reader.GetString(4),
+            ResidentId = reader.IsDBNull(5) ? null : reader.GetInt32(5)
+        };
+    }
+
+    private static Resident MapResident(SqliteDataReader reader)
+    {
+        return new Resident
+        {
+            Id = reader.GetInt32(0),
+            FullName = reader.GetString(1),
+            HouseholdNo = reader.GetString(2),
+            ContactNumber = reader.GetString(3),
+            EmailAddress = reader.GetString(4),
+            Purok = reader.GetString(5),
+            RegisteredOn = DateTime.Parse(reader.GetString(6))
+        };
+    }
+
+    private async Task<int> ExecuteScalarIntAsync(string sql, Action<SqliteCommand>? configure = null)
     {
         await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();
         command.CommandText = sql;
+        configure?.Invoke(command);
         return Convert.ToInt32(await command.ExecuteScalarAsync());
     }
 
@@ -316,7 +517,24 @@ public class PortalRepository
         await command.ExecuteNonQueryAsync();
     }
 
-    private async Task<List<T>> ExecuteReaderAsync<T>(string sql, Func<SqliteDataReader, T> map)
+    private async Task<T?> ExecuteSingleAsync<T>(string sql, Action<SqliteCommand>? configure, Func<SqliteDataReader, T> map)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        configure?.Invoke(command);
+
+        await using var reader = await command.ExecuteReaderAsync();
+        if (await reader.ReadAsync())
+        {
+            return map(reader);
+        }
+
+        return default;
+    }
+
+    private async Task<List<T>> ExecuteReaderAsync<T>(string sql, Action<SqliteCommand>? configure, Func<SqliteDataReader, T> map)
     {
         var items = new List<T>();
 
@@ -324,6 +542,7 @@ public class PortalRepository
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();
         command.CommandText = sql;
+        configure?.Invoke(command);
 
         await using var reader = await command.ExecuteReaderAsync();
         while (await reader.ReadAsync())
