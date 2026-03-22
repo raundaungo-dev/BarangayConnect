@@ -123,6 +123,10 @@
                         <th>Priority</th>
                         <th>Status</th>
                         <th>Submitted</th>
+                        @if (Model.IsAdmin)
+                        {
+                            <th>Actions</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -134,9 +138,51 @@
                             <td>@request.ResidentName</td>
                         }
                         <td>@request.ServiceName</td>
-                        <td><span class="priority-badge priority-badge--@request.Priority.ToLowerInvariant()">@request.Priority</span></td>
-                        <td><span class="status-badge">@request.Status</span></td>
-                        <td>@request.SubmittedOn.ToString("MMM dd, yyyy")</td>
+                        @if (Model.IsAdmin)
+                        {
+                            <td>
+                                <select name="priority" class="form-select form-select-sm" form="update-request-@request.Id">
+                                    <option value="Normal" selected="@(request.Priority == "Normal" ? "selected" : null)">Normal</option>
+                                    <option value="High" selected="@(request.Priority == "High" ? "selected" : null)">High</option>
+                                    <option value="Urgent" selected="@(request.Priority == "Urgent" ? "selected" : null)">Urgent</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="status" class="form-select form-select-sm" form="update-request-@request.Id">
+                                    <option value="Pending" selected="@(request.Status == "Pending" ? "selected" : null)">Pending</option>
+                                    <option value="In Review" selected="@(request.Status == "In Review" ? "selected" : null)">In Review</option>
+                                    <option value="Completed" selected="@(request.Status == "Completed" ? "selected" : null)">Completed</option>
+                                </select>
+                            </td>
+                            <td>@request.SubmittedOn.ToString("MMM dd, yyyy")</td>
+                            <td>
+                                <div class="d-flex flex-column gap-2">
+                                    <form id="update-request-@request.Id" asp-action="UpdateRequest" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="requestId" value="@request.Id" />
+                                        <button type="submit" class="btn btn-sm btn-civic">Save</button>
+                                    </form>
+                                @if (request.Status == "Completed")
+                                {
+                                    <form asp-action="DeleteRequest" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="requestId" value="@request.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this completed request?');">Delete</button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Complete first to delete</span>
+                                }
+                                </div>
+                            </td>
+                        }
+                        else
+                        {
+                            <td><span class="priority-badge priority-badge--@request.Priority.ToLowerInvariant()">@request.Priority</span></td>
+                            <td><span class="status-badge">@request.Status</span></td>
+                            <td>@request.SubmittedOn.ToString("MMM dd, yyyy")</td>
+                        }
                     </tr>
                 }
                 </tbody>

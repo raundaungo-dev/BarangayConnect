@@ -402,6 +402,37 @@ public class PortalRepository
         });
     }
 
+    public async Task UpdateServiceRequestAsync(int requestId, string priority, string status)
+    {
+        const string sql = """
+            UPDATE ServiceRequests
+            SET Priority = @Priority,
+                Status = @Status
+            WHERE RequestId = @RequestId;
+            """;
+
+        await ExecuteNonQueryAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@RequestId", requestId);
+            command.Parameters.AddWithValue("@Priority", priority);
+            command.Parameters.AddWithValue("@Status", status);
+        });
+    }
+
+    public async Task<bool> DeleteCompletedServiceRequestAsync(int requestId)
+    {
+        const string sql = """
+            DELETE FROM ServiceRequests
+            WHERE RequestId = @RequestId
+              AND Status = 'Completed';
+            """;
+
+        return await ExecuteNonQueryWithResultAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@RequestId", requestId);
+        }) > 0;
+    }
+
     private async Task SeedReferenceDataAsync(SqliteConnection connection)
     {
         var countCommand = connection.CreateCommand();
@@ -515,6 +546,16 @@ public class PortalRepository
         command.CommandText = sql;
         configure?.Invoke(command);
         await command.ExecuteNonQueryAsync();
+    }
+
+    private async Task<int> ExecuteNonQueryWithResultAsync(string sql, Action<SqliteCommand>? configure = null)
+    {
+        await using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = sql;
+        configure?.Invoke(command);
+        return await command.ExecuteNonQueryAsync();
     }
 
     private async Task<T?> ExecuteSingleAsync<T>(string sql, Action<SqliteCommand>? configure, Func<SqliteDataReader, T> map)

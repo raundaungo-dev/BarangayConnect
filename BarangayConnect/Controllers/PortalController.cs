@@ -321,6 +321,60 @@ public class PortalController : Controller
         return RedirectToAction(nameof(Requests));
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateRequest(int requestId, string priority, string status)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can update request records.";
+            return RedirectToAction(nameof(Requests));
+        }
+
+        var allowedPriorities = new[] { "Normal", "High", "Urgent" };
+        var allowedStatuses = new[] { "Pending", "In Review", "Completed" };
+
+        if (!allowedPriorities.Contains(priority) || !allowedStatuses.Contains(status))
+        {
+            TempData["StatusMessage"] = "Invalid request update values were submitted.";
+            return RedirectToAction(nameof(Requests));
+        }
+
+        await _repository.UpdateServiceRequestAsync(requestId, priority, status);
+        TempData["StatusMessage"] = "Request updated successfully.";
+        return RedirectToAction(nameof(Requests));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteRequest(int requestId)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can delete completed requests.";
+            return RedirectToAction(nameof(Requests));
+        }
+
+        var deleted = await _repository.DeleteCompletedServiceRequestAsync(requestId);
+        TempData["StatusMessage"] = deleted
+            ? "Completed request deleted successfully."
+            : "Only completed requests can be deleted.";
+
+        return RedirectToAction(nameof(Requests));
+    }
+
     [HttpGet]
     public async Task<IActionResult> Documentation()
     {
