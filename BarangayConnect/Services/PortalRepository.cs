@@ -194,6 +194,46 @@ public class PortalRepository
         });
     }
 
+    public async Task AddAnnouncementAsync(AnnouncementInputModel model)
+    {
+        const string sql = """
+            INSERT INTO Announcements (Title, Category, Summary, PublishedOn, Audience)
+            VALUES (@Title, @Category, @Summary, @PublishedOn, @Audience);
+            """;
+
+        await ExecuteNonQueryAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@Title", model.Title.Trim());
+            command.Parameters.AddWithValue("@Category", model.Category.Trim());
+            command.Parameters.AddWithValue("@Summary", model.Summary.Trim());
+            command.Parameters.AddWithValue("@PublishedOn", model.PublishedOn.ToString("yyyy-MM-dd"));
+            command.Parameters.AddWithValue("@Audience", model.Audience.Trim());
+        });
+    }
+
+    public async Task UpdateAnnouncementAsync(int announcementId, AnnouncementInputModel model)
+    {
+        const string sql = """
+            UPDATE Announcements
+            SET Title = @Title,
+                Category = @Category,
+                Summary = @Summary,
+                PublishedOn = @PublishedOn,
+                Audience = @Audience
+            WHERE AnnouncementId = @AnnouncementId;
+            """;
+
+        await ExecuteNonQueryAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@AnnouncementId", announcementId);
+            command.Parameters.AddWithValue("@Title", model.Title.Trim());
+            command.Parameters.AddWithValue("@Category", model.Category.Trim());
+            command.Parameters.AddWithValue("@Summary", model.Summary.Trim());
+            command.Parameters.AddWithValue("@PublishedOn", model.PublishedOn.ToString("yyyy-MM-dd"));
+            command.Parameters.AddWithValue("@Audience", model.Audience.Trim());
+        });
+    }
+
     public async Task<List<Resident>> GetResidentsAsync()
     {
         const string sql = """
@@ -237,6 +277,45 @@ public class PortalRepository
             command.Parameters.AddWithValue("@Purok", model.Purok);
             command.Parameters.AddWithValue("@RegisteredOn", DateTime.Today.ToString("yyyy-MM-dd"));
         });
+    }
+
+    public async Task UpdateResidentAsync(int residentId, ResidentInputModel model)
+    {
+        const string sql = """
+            UPDATE Residents
+            SET FullName = @FullName,
+                HouseholdNo = @HouseholdNo,
+                ContactNumber = @ContactNumber,
+                EmailAddress = @EmailAddress,
+                Purok = @Purok
+            WHERE ResidentId = @ResidentId;
+            """;
+
+        await ExecuteNonQueryAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@ResidentId", residentId);
+            command.Parameters.AddWithValue("@FullName", model.FullName.Trim());
+            command.Parameters.AddWithValue("@HouseholdNo", model.HouseholdNo.Trim());
+            command.Parameters.AddWithValue("@ContactNumber", model.ContactNumber.Trim());
+            command.Parameters.AddWithValue("@EmailAddress", model.EmailAddress.Trim());
+            command.Parameters.AddWithValue("@Purok", model.Purok.Trim());
+        });
+    }
+
+    public async Task<bool> DeleteResidentAsync(int residentId)
+    {
+        const string sql = """
+            DELETE FROM Residents
+            WHERE ResidentId = @ResidentId
+              AND NOT EXISTS (SELECT 1 FROM Accounts WHERE ResidentId = @ResidentId)
+              AND NOT EXISTS (SELECT 1 FROM Appointments WHERE ResidentId = @ResidentId)
+              AND NOT EXISTS (SELECT 1 FROM ServiceRequests WHERE ResidentId = @ResidentId);
+            """;
+
+        return await ExecuteNonQueryWithResultAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@ResidentId", residentId);
+        }) > 0;
     }
 
     public async Task AssignResidentToAccountAsync(int accountId, int residentId)
@@ -288,6 +367,44 @@ public class PortalRepository
             command.Parameters.AddWithValue("@Schedule", model.Schedule);
             command.Parameters.AddWithValue("@Requirements", model.Requirements);
         });
+    }
+
+    public async Task UpdateServiceAsync(int serviceId, ServiceInputModel model)
+    {
+        const string sql = """
+            UPDATE Services
+            SET Name = @Name,
+                Office = @Office,
+                Description = @Description,
+                Schedule = @Schedule,
+                Requirements = @Requirements
+            WHERE ServiceId = @ServiceId;
+            """;
+
+        await ExecuteNonQueryAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@ServiceId", serviceId);
+            command.Parameters.AddWithValue("@Name", model.Name.Trim());
+            command.Parameters.AddWithValue("@Office", model.Office.Trim());
+            command.Parameters.AddWithValue("@Description", model.Description.Trim());
+            command.Parameters.AddWithValue("@Schedule", model.Schedule.Trim());
+            command.Parameters.AddWithValue("@Requirements", model.Requirements.Trim());
+        });
+    }
+
+    public async Task<bool> DeleteServiceAsync(int serviceId)
+    {
+        const string sql = """
+            DELETE FROM Services
+            WHERE ServiceId = @ServiceId
+              AND NOT EXISTS (SELECT 1 FROM Appointments WHERE ServiceId = @ServiceId)
+              AND NOT EXISTS (SELECT 1 FROM ServiceRequests WHERE ServiceId = @ServiceId);
+            """;
+
+        return await ExecuteNonQueryWithResultAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@ServiceId", serviceId);
+        }) > 0;
     }
 
     public async Task<List<Appointment>> GetAppointmentsAsync(int? residentId = null)
@@ -344,6 +461,35 @@ public class PortalRepository
             command.Parameters.AddWithValue("@TimeSlot", model.TimeSlot);
             command.Parameters.AddWithValue("@Notes", model.Notes);
         });
+    }
+
+    public async Task UpdateAppointmentStatusAsync(int appointmentId, string status)
+    {
+        const string sql = """
+            UPDATE Appointments
+            SET Status = @Status
+            WHERE AppointmentId = @AppointmentId;
+            """;
+
+        await ExecuteNonQueryAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@AppointmentId", appointmentId);
+            command.Parameters.AddWithValue("@Status", status);
+        });
+    }
+
+    public async Task<bool> DeleteClosedAppointmentAsync(int appointmentId)
+    {
+        const string sql = """
+            DELETE FROM Appointments
+            WHERE AppointmentId = @AppointmentId
+              AND Status IN ('Completed', 'Cancelled');
+            """;
+
+        return await ExecuteNonQueryWithResultAsync(sql, command =>
+        {
+            command.Parameters.AddWithValue("@AppointmentId", appointmentId);
+        }) > 0;
     }
 
     public async Task<List<ServiceRequest>> GetServiceRequestsAsync(int? residentId = null)

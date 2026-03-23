@@ -66,18 +66,82 @@
 @foreach (var item in Model.Services)
 {
     <article class="panel-card service-card">
-        <div class="panel-header">
-            <div>
-                <h2>@item.Name</h2>
-                <p class="service-subtitle">@item.Office</p>
+        @if (Model.IsAdmin)
+        {
+            <form id="update-service-@item.Id" asp-action="UpdateService" method="post" class="data-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="serviceId" value="@item.Id" />
+                <div class="panel-header">
+                    <div>
+                        <h2>Edit Service</h2>
+                        <p class="service-subtitle">@item.Name</p>
+                    </div>
+                    <span class="badge-soft">@item.Office</span>
+                </div>
+                <div class="field-grid">
+                    <div>
+                        <label for="service-name-@item.Id">Service Name</label>
+                        <input id="service-name-@item.Id" name="Name" value="@item.Name" class="form-control" />
+                    </div>
+                    <div>
+                        <label for="service-office-@item.Id">Office</label>
+                        <input id="service-office-@item.Id" name="Office" value="@item.Office" class="form-control" />
+                    </div>
+                    <div class="full-span">
+                        <label for="service-description-@item.Id">Description</label>
+                        <textarea id="service-description-@item.Id" name="Description" class="form-control" rows="3">@item.Description</textarea>
+                    </div>
+                    <div>
+                        <label for="service-schedule-@item.Id">Schedule</label>
+                        <input id="service-schedule-@item.Id" name="Schedule" value="@item.Schedule" class="form-control" />
+                    </div>
+                    <div>
+                        <label for="service-requirements-@item.Id">Requirements</label>
+                        <input id="service-requirements-@item.Id" name="Requirements" value="@item.Requirements" class="form-control" />
+                    </div>
+                </div>
+            </form>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <button type="button"
+                        class="btn btn-civic"
+                        form="update-service-@item.Id"
+                        data-confirm-action="true"
+                        data-confirm-title="Save service changes?"
+                        data-confirm-message="This will update the service details shown across the system."
+                        data-confirm-button="Save Service"
+                        data-confirm-badge="Update Service">
+                    Save Changes
+                </button>
+            <form asp-action="DeleteService" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="serviceId" value="@item.Id" />
+                <button type="button"
+                        class="btn btn-outline-danger"
+                        data-confirm-action="true"
+                        data-confirm-title="Delete this service?"
+                        data-confirm-message="This will remove the service only if it is not linked to any appointments or service requests."
+                        data-confirm-button="Delete Service"
+                        data-confirm-badge="Delete Service">
+                    Delete
+                </button>
+            </form>
             </div>
-            <span class="badge-soft">@item.Office</span>
-        </div>
-        <p>@item.Description</p>
-        <div class="detail-stack">
-            <p><strong>Schedule</strong><span>@item.Schedule</span></p>
-            <p><strong>Requirements</strong><span>@item.Requirements</span></p>
-        </div>
+        }
+        else
+        {
+            <div class="panel-header">
+                <div>
+                    <h2>@item.Name</h2>
+                    <p class="service-subtitle">@item.Office</p>
+                </div>
+                <span class="badge-soft">@item.Office</span>
+            </div>
+            <p>@item.Description</p>
+            <div class="detail-stack">
+                <p><strong>Schedule</strong><span>@item.Schedule</span></p>
+                <p><strong>Requirements</strong><span>@item.Requirements</span></p>
+            </div>
+        }
     </article>
 }
 </section>

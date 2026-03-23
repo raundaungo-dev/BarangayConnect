@@ -133,16 +133,14 @@
 <section class="panel-card documentation-section documentation-section--final">
     <div class="panel-header">
         <h2>Final Entity Relationship Diagram</h2>
-        <span class="badge-soft">Placeholder image at page bottom</span>
+        <span class="badge-soft">Final diagram image</span>
     </div>
-    <p class="placeholder-note">
-        The current ERD JPG below is a placeholder image. The downloadable PDF link is still available for the formal ERD file.
-    </p>
+    <p class="placeholder-note">This section now uses the final ERD image for both quick viewing and direct download.</p>
     <div class="erd-links">
-        <a class="btn btn-civic" href="@Model.ErdPdfPath" target="_blank" rel="noopener">Open ERD PDF</a>
-        <a class="btn btn-outline-civic" href="@Model.ErdImagePath" target="_blank" rel="noopener">Open Placeholder JPG</a>
+        <a class="btn btn-civic" href="@Model.ErdImagePath" target="_blank" rel="noopener">View Final ERD Image</a>
+        <a class="btn btn-outline-civic" href="@Model.ErdImagePath" download="Final-ERD.png">Download Final ERD Image</a>
     </div>
     <div class="erd-frame">
-        <img src="@Model.ErdImagePath" alt="Placeholder ERD image" class="img-fluid" />
+        <img src="@Model.ErdImagePath" alt="Final entity relationship diagram" class="img-fluid" />
     </div>
 </section>

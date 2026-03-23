@@ -1,4 +1,4 @@
-@using Microsoft.AspNetCore.Http
+﻿@using Microsoft.AspNetCore.Http
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -56,7 +56,7 @@
                             {
                                 <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Documentation">Documentation</a></li>
                             }
-                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Logout">Logout</a></li>
+                            <li class="nav-item"><a class="nav-link" asp-controller="Portal" asp-action="Logout" data-confirm-action="true" data-confirm-title="Log out of your account?" data-confirm-message="Your current session will end and you will be returned to the login page." data-confirm-button="Log Out">Logout</a></li>
                         </ul>
                     }
                     else
@@ -75,6 +75,18 @@
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
+    </div>
+
+    <div class="modal-card-backdrop" id="confirmation-modal" hidden>
+        <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="confirmation-modal-title">
+            <div class="modal-card__badge" id="confirmation-modal-badge">Please Confirm</div>
+            <h2 id="confirmation-modal-title">Are you sure?</h2>
+            <p id="confirmation-modal-message">Please confirm that you want to continue with this action.</p>
+            <div class="modal-card__actions">
+                <button type="button" class="btn btn-outline-civic" data-confirm-cancel="true">Cancel</button>
+                <button type="button" class="btn btn-civic" data-confirm-continue="true">Continue</button>
+            </div>
+        </div>
     </div>
 
     <footer class="site-footer">

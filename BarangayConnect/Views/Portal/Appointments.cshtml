@@ -131,6 +131,10 @@
                         <th>Service</th>
                         <th>Slot</th>
                         <th>Status</th>
+                        @if (Model.IsAdmin)
+                        {
+                            <th>Actions</th>
+                        }
                     </tr>
                 </thead>
                 <tbody>
@@ -144,7 +148,57 @@
                         }
                         <td>@appointment.ServiceName</td>
                         <td>@appointment.TimeSlot</td>
-                        <td><span class="status-badge">@appointment.Status</span></td>
+                        @if (Model.IsAdmin)
+                        {
+                            <td>
+                                <select name="status" class="form-select form-select-sm" form="update-appointment-@appointment.Id">
+                                    <option value="Scheduled" selected="@(appointment.Status == "Scheduled" ? "selected" : null)">Scheduled</option>
+                                    <option value="Completed" selected="@(appointment.Status == "Completed" ? "selected" : null)">Completed</option>
+                                    <option value="Cancelled" selected="@(appointment.Status == "Cancelled" ? "selected" : null)">Cancelled</option>
+                                </select>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column gap-2">
+                                    <form id="update-appointment-@appointment.Id" asp-action="UpdateAppointmentStatus" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="appointmentId" value="@appointment.Id" />
+                                        <button type="button"
+                                                class="btn btn-sm btn-civic"
+                                                data-confirm-action="true"
+                                                data-confirm-title="Update appointment status?"
+                                                data-confirm-message="This will save the current appointment status in the schedule log."
+                                                data-confirm-button="Save Status"
+                                                data-confirm-badge="Update Appointment">
+                                            Save
+                                        </button>
+                                    </form>
+                                    @if (appointment.Status == "Completed" || appointment.Status == "Cancelled")
+                                    {
+                                        <form asp-action="DeleteAppointment" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="appointmentId" value="@appointment.Id" />
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    data-confirm-action="true"
+                                                    data-confirm-title="Delete this appointment?"
+                                                    data-confirm-message="This will permanently remove the completed or cancelled appointment from the list."
+                                                    data-confirm-button="Delete Appointment"
+                                                    data-confirm-badge="Delete Appointment">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Finish or cancel first to delete</span>
+                                    }
+                                </div>
+                            </td>
+                        }
+                        else
+                        {
+                            <td><span class="status-badge">@appointment.Status</span></td>
+                        }
                     </tr>
                 }
                 </tbody>

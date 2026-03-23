@@ -1,4 +1,4 @@
-@model List<BarangayConnect.Models.Announcement>
+@model BarangayConnect.Models.AnnouncementsPageViewModel
 @{
     ViewData["Title"] = "Announcements";
 }
@@ -6,14 +6,61 @@
 <section class="page-heading page-heading--split">
     <div>
         <p class="eyebrow">Information Center</p>
-        <h1>Community announcements and public notices</h1>
-        <p>Residents can quickly browse advisories, events, and office reminders from one searchable noticeboard.</p>
+        <h1>@(Model.IsAdmin ? "Publish and manage community announcements" : "Community announcements and public notices")</h1>
+        <p>@(Model.IsAdmin ? "Administrators can post and revise public notices while residents continue to browse the latest updates." : "Residents can quickly browse advisories, events, and office reminders from one searchable noticeboard.")</p>
     </div>
     <div class="page-heading__card">
-        <strong>@Model.Count</strong>
+        <strong>@Model.Announcements.Count</strong>
         <span>active public notices</span>
     </div>
 </section>
+
+@if (TempData["StatusMessage"] is string message)
+{
+    <div class="alert alert-success shadow-sm">@message</div>
+}
+
+@if (Model.IsAdmin)
+{
+    <section class="panel-card documentation-section">
+        <div class="panel-header">
+            <h2>Add Announcement</h2>
+            <span class="badge-soft">Admin only</span>
+        </div>
+        <form asp-action="Announcements" method="post" class="data-form">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="field-grid">
+                <div>
+                    <label asp-for="NewAnnouncement.Title"></label>
+                    <input asp-for="NewAnnouncement.Title" class="form-control" />
+                    <span asp-validation-for="NewAnnouncement.Title" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewAnnouncement.Category"></label>
+                    <input asp-for="NewAnnouncement.Category" class="form-control" />
+                    <span asp-validation-for="NewAnnouncement.Category" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewAnnouncement.PublishedOn"></label>
+                    <input asp-for="NewAnnouncement.PublishedOn" class="form-control" />
+                    <span asp-validation-for="NewAnnouncement.PublishedOn" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="NewAnnouncement.Audience"></label>
+                    <input asp-for="NewAnnouncement.Audience" class="form-control" />
+                    <span asp-validation-for="NewAnnouncement.Audience" class="text-danger"></span>
+                </div>
+                <div class="full-span">
+                    <label asp-for="NewAnnouncement.Summary"></label>
+                    <textarea asp-for="NewAnnouncement.Summary" class="form-control" rows="3"></textarea>
+                    <span asp-validation-for="NewAnnouncement.Summary" class="text-danger"></span>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-civic">Add Announcement</button>
+        </form>
+    </section>
+}
 
 <section class="panel-card filter-toolbar">
     <div>
@@ -26,13 +73,58 @@
 </section>
 
 <section id="announcement-list" class="stack-grid">
-@foreach (var item in Model)
+@foreach (var item in Model.Announcements)
 {
     <article class="panel-card" data-filter-item data-filter-text="@($"{item.Title} {item.Category} {item.Audience} {item.Summary}")">
-        <p class="feed-meta">@item.Category &middot; @item.PublishedOn.ToString("MMMM dd, yyyy")</p>
-        <h2>@item.Title</h2>
-        <p>@item.Summary</p>
-        <span class="badge-soft">@item.Audience</span>
+        @if (Model.IsAdmin)
+        {
+            <form id="update-announcement-@item.Id" asp-action="UpdateAnnouncement" method="post" class="data-form">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="announcementId" value="@item.Id" />
+                <div class="field-grid">
+                    <div>
+                        <label for="announcement-title-@item.Id">Title</label>
+                        <input id="announcement-title-@item.Id" name="Title" value="@item.Title" class="form-control" />
+                    </div>
+                    <div>
+                        <label for="announcement-category-@item.Id">Category</label>
+                        <input id="announcement-category-@item.Id" name="Category" value="@item.Category" class="form-control" />
+                    </div>
+                    <div>
+                        <label for="announcement-date-@item.Id">Published On</label>
+                        <input id="announcement-date-@item.Id" name="PublishedOn" type="date" value="@item.PublishedOn.ToString("yyyy-MM-dd")" class="form-control" />
+                    </div>
+                    <div>
+                        <label for="announcement-audience-@item.Id">Audience</label>
+                        <input id="announcement-audience-@item.Id" name="Audience" value="@item.Audience" class="form-control" />
+                    </div>
+                    <div class="full-span">
+                        <label for="announcement-summary-@item.Id">Summary</label>
+                        <textarea id="announcement-summary-@item.Id" name="Summary" class="form-control" rows="3">@item.Summary</textarea>
+                    </div>
+                </div>
+                <button type="button"
+                        class="btn btn-civic"
+                        data-confirm-action="true"
+                        data-confirm-title="Save announcement changes?"
+                        data-confirm-message="This will update the public notice shown to residents and staff."
+                        data-confirm-button="Save Announcement"
+                        data-confirm-badge="Update Notice">
+                    Save Changes
+                </button>
+            </form>
+        }
+        else
+        {
+            <p class="feed-meta">@item.Category &middot; @item.PublishedOn.ToString("MMMM dd, yyyy")</p>
+            <h2>@item.Title</h2>
+            <p>@item.Summary</p>
+            <span class="badge-soft">@item.Audience</span>
+        }
     </article>
 }
 </section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

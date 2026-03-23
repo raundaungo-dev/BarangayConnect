@@ -2,6 +2,7 @@ using BarangayConnect.Models;
 using BarangayConnect.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 
 namespace BarangayConnect.Controllers;
@@ -125,8 +126,73 @@ public class PortalController : Controller
             return RedirectToAction(nameof(Login));
         }
 
-        var announcements = await _repository.GetAnnouncementsAsync();
-        return View(announcements);
+        return View(new AnnouncementsPageViewModel
+        {
+            IsAdmin = IsAdmin(account),
+            Announcements = await _repository.GetAnnouncementsAsync(),
+            NewAnnouncement = new AnnouncementInputModel
+            {
+                PublishedOn = DateTime.Today
+            }
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Announcements(AnnouncementsPageViewModel model)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can add announcements.";
+            return RedirectToAction(nameof(Announcements));
+        }
+
+        if (!ModelState.IsValid)
+        {
+            model.IsAdmin = true;
+            model.Announcements = await _repository.GetAnnouncementsAsync();
+            return View(model);
+        }
+
+        await _repository.AddAnnouncementAsync(model.NewAnnouncement);
+        TempData["StatusMessage"] = "Announcement added successfully.";
+        return RedirectToAction(nameof(Announcements));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateAnnouncement(int announcementId, AnnouncementInputModel announcement)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can update announcements.";
+            return RedirectToAction(nameof(Announcements));
+        }
+
+        var validationResults = new List<ValidationResult>();
+        var validationContext = new ValidationContext(announcement);
+        if (!Validator.TryValidateObject(announcement, validationContext, validationResults, true))
+        {
+            TempData["StatusMessage"] = validationResults.FirstOrDefault()?.ErrorMessage
+                ?? "Please complete the announcement fields correctly before saving.";
+            return RedirectToAction(nameof(Announcements));
+        }
+
+        await _repository.UpdateAnnouncementAsync(announcementId, announcement);
+        TempData["StatusMessage"] = "Announcement updated successfully.";
+        return RedirectToAction(nameof(Announcements));
     }
 
     [HttpGet]
@@ -186,6 +252,60 @@ public class PortalController : Controller
         return RedirectToAction(nameof(Residents));
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateResident(int residentId, ResidentInputModel resident)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can update resident records.";
+            return RedirectToAction(nameof(Residents));
+        }
+
+        var validationResults = new List<ValidationResult>();
+        var validationContext = new ValidationContext(resident);
+        if (!Validator.TryValidateObject(resident, validationContext, validationResults, true))
+        {
+            TempData["StatusMessage"] = validationResults.FirstOrDefault()?.ErrorMessage
+                ?? "Please complete all resident fields correctly before saving.";
+            return RedirectToAction(nameof(Residents));
+        }
+
+        await _repository.UpdateResidentAsync(residentId, resident);
+        TempData["StatusMessage"] = "Resident record updated successfully.";
+        return RedirectToAction(nameof(Residents));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteResident(int residentId)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can delete resident records.";
+            return RedirectToAction(nameof(Residents));
+        }
+
+        var deleted = await _repository.DeleteResidentAsync(residentId);
+        TempData["StatusMessage"] = deleted
+            ? "Resident record deleted successfully."
+            : "Resident cannot be deleted while linked to an account, appointment, or request.";
+
+        return RedirectToAction(nameof(Residents));
+    }
+
     [HttpGet]
     public async Task<IActionResult> Services()
     {
@@ -227,6 +347,60 @@ public class PortalController : Controller
 
         await _repository.AddServiceAsync(model.NewService);
         TempData["StatusMessage"] = "Service added successfully.";
+        return RedirectToAction(nameof(Services));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateService(int serviceId, ServiceInputModel service)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can update services.";
+            return RedirectToAction(nameof(Services));
+        }
+
+        var validationResults = new List<ValidationResult>();
+        var validationContext = new ValidationContext(service);
+        if (!Validator.TryValidateObject(service, validationContext, validationResults, true))
+        {
+            TempData["StatusMessage"] = validationResults.FirstOrDefault()?.ErrorMessage
+                ?? "Please complete the service fields correctly before saving.";
+            return RedirectToAction(nameof(Services));
+        }
+
+        await _repository.UpdateServiceAsync(serviceId, service);
+        TempData["StatusMessage"] = "Service updated successfully.";
+        return RedirectToAction(nameof(Services));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteService(int serviceId)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can delete services.";
+            return RedirectToAction(nameof(Services));
+        }
+
+        var deleted = await _repository.DeleteServiceAsync(serviceId);
+        TempData["StatusMessage"] = deleted
+            ? "Service deleted successfully."
+            : "Service cannot be deleted while linked to an appointment or request.";
+
         return RedirectToAction(nameof(Services));
     }
 
@@ -274,6 +448,58 @@ public class PortalController : Controller
 
         await _repository.AddAppointmentAsync(model.NewAppointment);
         TempData["StatusMessage"] = "Appointment scheduled successfully.";
+        return RedirectToAction(nameof(Appointments));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateAppointmentStatus(int appointmentId, string status)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can update appointment records.";
+            return RedirectToAction(nameof(Appointments));
+        }
+
+        var allowedStatuses = new[] { "Scheduled", "Completed", "Cancelled" };
+        if (!allowedStatuses.Contains(status))
+        {
+            TempData["StatusMessage"] = "Invalid appointment status was submitted.";
+            return RedirectToAction(nameof(Appointments));
+        }
+
+        await _repository.UpdateAppointmentStatusAsync(appointmentId, status);
+        TempData["StatusMessage"] = "Appointment status updated successfully.";
+        return RedirectToAction(nameof(Appointments));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAppointment(int appointmentId)
+    {
+        var account = await RequireAccountAsync();
+        if (account is null)
+        {
+            return RedirectToAction(nameof(Login));
+        }
+
+        if (!IsAdmin(account))
+        {
+            TempData["StatusMessage"] = "Only administrators can delete appointment records.";
+            return RedirectToAction(nameof(Appointments));
+        }
+
+        var deleted = await _repository.DeleteClosedAppointmentAsync(appointmentId);
+        TempData["StatusMessage"] = deleted
+            ? "Appointment deleted successfully."
+            : "Only completed or cancelled appointments can be deleted.";
+
         return RedirectToAction(nameof(Appointments));
     }
 
@@ -392,7 +618,7 @@ public class PortalController : Controller
 
         var model = new SystemDocumentationViewModel
         {
-            ErdImagePath = "/docs/Final-ERD.jpg",
+            ErdImagePath = "/docs/Final-ERD.png",
             ErdPdfPath = "/docs/Final-ERD.pdf",
             Features =
             [

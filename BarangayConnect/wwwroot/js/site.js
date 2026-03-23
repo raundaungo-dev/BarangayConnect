@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   markActiveNav();
   prepareAnimations();
   wireFilters();
+  wireConfirmationModal();
 });
 
 function markActiveNav() {
@@ -100,5 +101,94 @@ function wireFilters() {
         item.style.display = matches ? "" : "none";
       });
     });
+  });
+}
+
+function wireConfirmationModal() {
+  const modal = document.querySelector("#confirmation-modal");
+  if (!modal) {
+    return;
+  }
+
+  const title = modal.querySelector("#confirmation-modal-title");
+  const message = modal.querySelector("#confirmation-modal-message");
+  const badge = modal.querySelector("#confirmation-modal-badge");
+  const cancelButton = modal.querySelector("[data-confirm-cancel='true']");
+  const continueButton = modal.querySelector("[data-confirm-continue='true']");
+  let lastTrigger = null;
+  let pendingAction = null;
+
+  const closeModal = () => {
+    modal.hidden = true;
+    document.body.style.overflow = "";
+    pendingAction = null;
+
+    if (lastTrigger instanceof HTMLElement) {
+      lastTrigger.focus();
+    }
+  };
+
+  document.querySelectorAll("[data-confirm-action='true']").forEach((trigger) => {
+    trigger.addEventListener("click", (event) => {
+      event.preventDefault();
+
+      lastTrigger = trigger;
+      const confirmTitle = trigger.getAttribute("data-confirm-title") || "Are you sure?";
+      const confirmMessage = trigger.getAttribute("data-confirm-message") || "Please confirm that you want to continue with this action.";
+      const confirmButton = trigger.getAttribute("data-confirm-button") || "Continue";
+      const confirmBadge = trigger.getAttribute("data-confirm-badge") || "Please Confirm";
+
+      if (title) {
+        title.textContent = confirmTitle;
+      }
+
+      if (message) {
+        message.textContent = confirmMessage;
+      }
+
+      if (badge) {
+        badge.textContent = confirmBadge;
+      }
+
+      if (continueButton) {
+        continueButton.textContent = confirmButton;
+      }
+
+      if (trigger.matches("a[href]")) {
+        const href = trigger.getAttribute("href") || "/";
+        pendingAction = () => {
+          window.location.href = href;
+        };
+      } else if (trigger instanceof HTMLButtonElement && trigger.form) {
+        pendingAction = () => {
+          trigger.form.submit();
+        };
+      } else {
+        pendingAction = null;
+      }
+
+      modal.hidden = false;
+      document.body.style.overflow = "hidden";
+      cancelButton?.focus();
+    });
+  });
+
+  cancelButton?.addEventListener("click", closeModal);
+  continueButton?.addEventListener("click", () => {
+    if (typeof pendingAction === "function") {
+      pendingAction();
+    }
+  });
+
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !modal.hidden) {
+      closeModal();
+    }
   });
 }

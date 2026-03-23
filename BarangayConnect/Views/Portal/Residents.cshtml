@@ -64,8 +64,11 @@
                 <h2>Registered Residents</h2>
                 <span class="badge-soft">@Model.Residents.Count total</span>
             </div>
+            <div class="filter-control filter-control--inline">
+                <input type="search" class="form-control" placeholder="Search by name, household, contact, email, or purok..." data-filter-input="#resident-table" />
+            </div>
             <div class="table-shell">
-                <table class="table civic-table">
+                <table id="resident-table" class="table civic-table">
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -73,17 +76,58 @@
                             <th>Contact</th>
                             <th>Email</th>
                             <th>Purok</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                     @foreach (var resident in Model.Residents)
                     {
-                        <tr>
-                            <td>@resident.FullName</td>
-                            <td>@resident.HouseholdNo</td>
-                            <td>@resident.ContactNumber</td>
-                            <td>@resident.EmailAddress</td>
-                            <td>@resident.Purok</td>
+                        <tr data-filter-item data-filter-text="@($"{resident.FullName} {resident.HouseholdNo} {resident.ContactNumber} {resident.EmailAddress} {resident.Purok}")">
+                            <td>
+                                <input name="FullName" value="@resident.FullName" class="form-control form-control-sm" form="update-resident-@resident.Id" />
+                            </td>
+                            <td>
+                                <input name="HouseholdNo" value="@resident.HouseholdNo" class="form-control form-control-sm" form="update-resident-@resident.Id" />
+                            </td>
+                            <td>
+                                <input name="ContactNumber" value="@resident.ContactNumber" class="form-control form-control-sm" form="update-resident-@resident.Id" />
+                            </td>
+                            <td>
+                                <input name="EmailAddress" value="@resident.EmailAddress" class="form-control form-control-sm" form="update-resident-@resident.Id" />
+                            </td>
+                            <td>
+                                <input name="Purok" value="@resident.Purok" class="form-control form-control-sm" form="update-resident-@resident.Id" />
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column gap-2">
+                                    <form id="update-resident-@resident.Id" asp-action="UpdateResident" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="residentId" value="@resident.Id" />
+                                        <button type="button"
+                                                class="btn btn-sm btn-civic"
+                                                data-confirm-action="true"
+                                                data-confirm-title="Save resident changes?"
+                                                data-confirm-message="This will update the resident information shown in the registry."
+                                                data-confirm-button="Save Changes"
+                                                data-confirm-badge="Update Record">
+                                            Save
+                                        </button>
+                                    </form>
+                                    <form asp-action="DeleteResident" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="residentId" value="@resident.Id" />
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                data-confirm-action="true"
+                                                data-confirm-title="Delete this resident record?"
+                                                data-confirm-message="This will permanently remove the resident only if there are no linked accounts, appointments, or service requests."
+                                                data-confirm-button="Delete Resident"
+                                                data-confirm-badge="Delete Record">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
                         </tr>
                     }
                     </tbody>
