@@ -304,18 +304,49 @@ public class PortalRepository
 
     public async Task<bool> DeleteResidentAsync(int residentId)
     {
-        const string sql = """
-            DELETE FROM Residents
-            WHERE ResidentId = @ResidentId
-              AND NOT EXISTS (SELECT 1 FROM Accounts WHERE ResidentId = @ResidentId)
-              AND NOT EXISTS (SELECT 1 FROM Appointments WHERE ResidentId = @ResidentId)
-              AND NOT EXISTS (SELECT 1 FROM ServiceRequests WHERE ResidentId = @ResidentId);
-            """;
+        await using var connection = _connectionFactory.CreateConnection();
+        await connection.OpenAsync();
+        await using var transaction = connection.BeginTransaction();
 
-        return await ExecuteNonQueryWithResultAsync(sql, command =>
-        {
-            command.Parameters.AddWithValue("@ResidentId", residentId);
-        }) > 0;
+        var unlinkAccounts = connection.CreateCommand();
+        unlinkAccounts.Transaction = transaction;
+        unlinkAccounts.CommandText = """
+            UPDATE Accounts
+            SET ResidentId = NULL
+            WHERE ResidentId = @ResidentId;
+            """;
+        unlinkAccounts.Parameters.AddWithValue("@ResidentId", residentId);
+        await unlinkAccounts.ExecuteNonQueryAsync();
+
+        var deleteAppointments = connection.CreateCommand();
+        deleteAppointments.Transaction = transaction;
+        deleteAppointments.CommandText = """
+            DELETE FROM Appointments
+            WHERE ResidentId = @ResidentId;
+            """;
+        deleteAppointments.Parameters.AddWithValue("@ResidentId", residentId);
+        await deleteAppointments.ExecuteNonQueryAsync();
+
+        var deleteRequests = connection.CreateCommand();
+        deleteRequests.Transaction = transaction;
+        deleteRequests.CommandText = """
+            DELETE FROM ServiceRequests
+            WHERE ResidentId = @ResidentId;
+            """;
+        deleteRequests.Parameters.AddWithValue("@ResidentId", residentId);
+        await deleteRequests.ExecuteNonQueryAsync();
+
+        var deleteResident = connection.CreateCommand();
+        deleteResident.Transaction = transaction;
+        deleteResident.CommandText = """
+            DELETE FROM Residents
+            WHERE ResidentId = @ResidentId;
+            """;
+        deleteResident.Parameters.AddWithValue("@ResidentId", residentId);
+        var deleted = await deleteResident.ExecuteNonQueryAsync();
+
+        await transaction.CommitAsync();
+        return deleted > 0;
     }
 
     public async Task AssignResidentToAccountAsync(int accountId, int residentId)

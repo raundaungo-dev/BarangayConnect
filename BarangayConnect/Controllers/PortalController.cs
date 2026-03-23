@@ -301,7 +301,7 @@ public class PortalController : Controller
         var deleted = await _repository.DeleteResidentAsync(residentId);
         TempData["StatusMessage"] = deleted
             ? "Resident record deleted successfully."
-            : "Resident cannot be deleted while linked to an account, appointment, or request.";
+            : "Resident record could not be deleted.";
 
         return RedirectToAction(nameof(Residents));
     }
